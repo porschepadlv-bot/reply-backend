@@ -12,107 +12,292 @@ const openai = new OpenAI({
 apiKey: process.env.OPENAI_API_KEY
 });
 
+const PORT = process.env.PORT || 3000;
+const MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
 function clean(value) {
 return typeof value === "string" ? value.trim() : "";
 }
 
+function toArray(value) {
+return Array.isArray(value) ? value : [];
+}
+
 function normalizeCategory(category) {
 const value = clean(category).toLowerCase();
-const allowed = ["dating", "relationship", "friendship", "family", "work"];
+const allowed = ["dating", "relationship", "friendship", "family", "work", "teen"];
 return allowed.includes(value) ? value : "dating";
 }
 
-function normalizeTone(category, tone) {
-const value = clean(tone).toLowerCase();
+function normalizeIntent(category, intent) {
+const value = clean(intent).toLowerCase();
 
-if (category === "dating") {
-const allowed = ["flirty", "funny", "smooth", "confident", "cute", "chill", "polite"];
-return allowed.includes(value) ? value : "flirty";
+const datingIntents = [
+"keep_it_going",
+"playful",
+"direct",
+"respectful",
+"boundary",
+"end_cleanly"
+];
+
+const generalIntents = [
+"resolution",
+"closure",
+"accountability",
+"de_escalate",
+"boundary",
+"direct",
+"respectful"
+];
+
+if (category === "dating" || category === "teen") {
+return datingIntents.includes(value) ? value : "keep_it_going";
 }
 
-const allowed = ["calm", "accountable", "firm", "direct", "polite", "warm", "closure"];
-return allowed.includes(value) ? value : "calm";
+return generalIntents.includes(value) ? value : "resolution";
 }
 
 function normalizeGoal(category, goal) {
-const value = clean(goal).toLowerCase();
+const value = clean(goal);
 
-if (category === "dating") {
-return value || "pursuing interest";
+if (value) return value;
+
+if (category === "dating" || category === "teen") {
+return "Reply naturally and match the chosen intent.";
 }
 
-return value || "resolution";
+return "Reply clearly and help the user handle the situation well.";
 }
 
-function buildSystemPrompt(category, tone, goal) {
+function intentRules(category, intent) {
+if (category === "dating" || category === "teen") {
+const rules = {
+keep_it_going: [
+"Keep the conversation alive.",
+"Invite more back-and-forth naturally.",
+"Do not sound needy."
+],
+playful: [
+"Light, witty, playful energy.",
+"Can tease lightly.",
+"Never sound hurt or bitter."
+],
+direct: [
+"Clear, confident, brief.",
+"Strong without sounding aggressive.",
+"High self-respect."
+],
+respectful: [
+"Warm, mature, balanced.",
+"No robotic politeness.",
+"Natural and easy to send."
+],
+boundary: [
+"Set a clear line without drama.",
+"Calm and self-respecting.",
+"No overexplaining."
+],
+end_cleanly: [
+"Short, final, self-respecting.",
+"No begging.",
+"No passive aggression."
+]
+};
+
+return rules[intent] || rules.keep_it_going;
+}
+
+const rules = {
+resolution: [
+"Move toward solving the issue.",
+"Emotionally intelligent.",
+"No unnecessary defensiveness."
+],
+closure: [
+"Final and self-respecting.",
+"Do not leave the door half-open.",
+"No begging or chasing."
+],
+accountability: [
+"Take responsibility cleanly where appropriate.",
+"No excuses.",
+"Sound sincere, not performative."
+],
+de_escalate: [
+"Lower tension.",
+"Stay calm and grounded.",
+"Do not inflame the conflict."
+],
+boundary: [
+"Clear line, calm delivery.",
+"Strong but not rude.",
+"No overexplaining."
+],
+direct: [
+"Brief, clear, straightforward.",
+"No fluff.",
+"Confident and controlled."
+],
+respectful: [
+"Mature and fair.",
+"Human, not corporate.",
+"No passive aggression."
+]
+};
+
+return rules[intent] || rules.resolution;
+}
+
+function buildSystemPrompt(category, intent, goal) {
 return `
-You write high-quality text-message replies for a mobile app.
+You write text-message replies for a mobile app.
 
-Rules:
-- Return exactly 5 reply options
-- Each reply should feel like a real text
-- Usually 1 line, max 2 short lines
-- No labels
-- No numbering
-- No quotation marks
-- No explanations
-- No robotic therapy language
-- Each option must feel different from the others
-- Match the requested tone exactly
+Return exactly 5 reply options.
+
+GLOBAL RULES:
+- Sound like a real person texting.
+- Usually 1 line, max 2 short lines.
+- No numbering.
+- No labels.
+- No quotation marks.
+- No emojis unless truly natural.
+- No therapy voice.
+- No robotic or corporate wording.
+- Avoid repeating structure.
+- Match the category and intent EXACTLY.
 
 Category: ${category}
-Tone: ${tone}
+Intent: ${intent}
 Goal: ${goal}
 
-Tone guidance:
-- flirty = playful, attractive, confident, never needy
-- funny = witty, light, charming, never wounded
-- smooth = polished, effortless, calm confidence
-- confident = brief, bold, self-respecting
-- cute = sweet, warm, charming
-- chill = casual, easy, natural
-- polite = respectful, mature, human
-- calm = steady, composed, emotionally controlled
-- accountable = takes ownership cleanly, no defensiveness
-- firm = clear boundaries, strong but not rude
-- direct = straight to the point, no fluff
-- warm = kind, human, open
-- closure = final, self-respecting, emotionally controlled
+Intent rules:
+${intentRules(category, intent).map((r) => `- ${r}`).join("\n")}
+
+CRITICAL CATEGORY RULES:
+
+${
+category === "dating"
+? `
+DATING:
+- Natural, engaging, human
+- Can be playful, light, confident
+- Slight personality is OK
+- Can tease lightly if appropriate
+- Do not assume a male or female voice
+- Make replies usable for anyone
+- Do not default to pursuit
+- Only escalate if the message and intent support it
+`
+: category === "teen"
+? `
+TEEN:
+- Casual, short, modern
+- No cringe slang
+- Keep it believable
+- Do not force memes or try-hard humor
+`
+: `
+RELATIONSHIP / FRIENDSHIP / FAMILY / WORK (STRICT MODE):
+- MUST be serious and grounded
+- NO jokes
+- NO flirting
+- NO sarcasm
+- NO playful teasing
+- NO witty or clever comebacks
+- NO emojis
+- NO charm-based responses
+
+PRIORITIZE:
+- emotional intelligence
+- calm tone
+- understanding
+- accountability when needed
+- maturity
+- empathy
+- clear communication
+
+If the message is negative, critical, tense, dismissive, or hurtful:
+- acknowledge it
+- do NOT deflect
+- do NOT joke
+- do NOT minimize
+- do NOT get cute
+- do NOT turn it into banter
+
+Responses should feel:
+- mature
+- real
+- emotionally aware
+- appropriate for a real relationship conversation
+
+Stay grounded in the actual situation.
+Do not invent extra backstory.
+`
+}
 
 Return ONLY a valid JSON array of 5 strings.
 `.trim();
 }
 
-function buildUserPrompt({ message, category, tone, goal, issue, previousReplies, conversationContext }) {
-const prev = Array.isArray(previousReplies) ? previousReplies.filter(Boolean) : [];
-const convo = Array.isArray(conversationContext) ? conversationContext.filter(Boolean) : [];
+function formatContext(contextItems) {
+return toArray(contextItems)
+.map((item) => {
+if (typeof item === "string") return clean(item);
+
+if (item && typeof item === "object") {
+const speaker = clean(item.speaker || item.role || "");
+const text = clean(item.text || item.message || item.content || "");
+
+if (speaker && text) return `${speaker}: ${text}`;
+return text;
+}
+
+return "";
+})
+.filter(Boolean)
+.slice(-8)
+.join("\n");
+}
+
+function buildUserPrompt(data) {
+const contextText = formatContext(data.conversationContext);
+
+const previousText = toArray(data.previousReplies)
+.map((x) => clean(x))
+.filter(Boolean)
+.slice(-12)
+.join("\n");
 
 return `
 Message to respond to:
-${message}
+${data.message}
 
 Category:
-${category}
+${data.category}
 
-Tone:
-${tone}
+Intent:
+${data.intent}
 
 Goal:
-${goal}
+${data.goal}
 
 Issue:
-${issue || "None"}
+${data.issue || "None"}
 
 Recent conversation context:
-${convo.length ? convo.join("\n") : "None"}
+${contextText || "None"}
 
 Replies already shown before:
-${prev.length ? prev.join("\n") : "None"}
+${previousText || "None"}
 
 Important:
-- Do not repeat or closely paraphrase any previous reply
-- Make the replies feel strong on first impression
-- Keep them usable as real texts
+- Do not repeat or closely paraphrase previous replies.
+- Stay aligned with the chosen intent.
+- Keep the replies easy to send as real texts.
+- Directly respond to the actual message.
+- If category is relationship, friendship, family, or work, keep the tone serious and mature.
+- If the incoming message is critical or tense, do not respond playfully.
 
 Return ONLY a valid JSON array of 5 strings.
 `.trim();
@@ -121,17 +306,15 @@ Return ONLY a valid JSON array of 5 strings.
 function parseReplies(text) {
 try {
 const parsed = JSON.parse(text);
+
 if (Array.isArray(parsed)) {
-return parsed
-.map((item) => clean(item))
-.filter(Boolean)
-.slice(0, 5);
+return parsed.map((x) => clean(x)).filter(Boolean).slice(0, 5);
 }
 } catch (_) {}
 
-return text
+return String(text || "")
 .split("\n")
-.map((line) => line.replace(/^\s*[-*\d.)]+\s*/, "").trim())
+.map((line) => line.replace(/^\s*[-*•\d.)]+\s*/, "").trim())
 .filter(Boolean)
 .slice(0, 5);
 }
@@ -141,39 +324,37 @@ res.send("AI Reply Server Running");
 });
 
 app.get("/health", (_req, res) => {
-res.json({ ok: true });
+res.json({ ok: true, model: MODEL });
 });
 
 app.post("/reply", async (req, res) => {
 try {
 const message = clean(req.body?.message);
 const category = normalizeCategory(req.body?.category);
-const tone = normalizeTone(category, req.body?.tone || req.body?.mode);
+const intent = normalizeIntent(category, req.body?.intent);
 const goal = normalizeGoal(category, req.body?.goal);
 const issue = clean(req.body?.issue);
-const previousReplies = Array.isArray(req.body?.previousReplies) ? req.body.previousReplies : [];
-const conversationContext = Array.isArray(req.body?.conversationContext) ? req.body.conversationContext : [];
+const previousReplies = toArray(req.body?.previousReplies);
+const conversationContext = toArray(req.body?.conversationContext);
 
 if (!message) {
-return res.status(400).json({
-error: "Missing message"
-});
+return res.status(400).json({ error: "Missing message" });
 }
 
 const completion = await openai.chat.completions.create({
-model: "gpt-4o-mini",
+model: MODEL,
 temperature: 0.9,
 messages: [
 {
 role: "system",
-content: buildSystemPrompt(category, tone, goal)
+content: buildSystemPrompt(category, intent, goal)
 },
 {
 role: "user",
 content: buildUserPrompt({
 message,
 category,
-tone,
+intent,
 goal,
 issue,
 previousReplies,
@@ -187,9 +368,7 @@ const text = completion.choices?.[0]?.message?.content || "";
 const replies = parseReplies(text);
 
 if (!replies.length) {
-return res.status(500).json({
-error: "No replies generated"
-});
+return res.status(500).json({ error: "No replies generated" });
 }
 
 return res.json({ replies });
@@ -198,12 +377,14 @@ console.error("Reply error:", error);
 
 return res.status(500).json({
 error: "Failed to generate replies",
-details: process.env.NODE_ENV === "production" ? undefined : String(error?.message || error)
+details:
+process.env.NODE_ENV === "production"
+? undefined
+: String(error?.message || error)
 });
 }
 });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
 console.log(`AI Reply Server Running on port ${PORT}`);
 });
