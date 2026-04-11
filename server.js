@@ -138,7 +138,8 @@ Category: ${category}
 Intent: ${intent} 
 Goal: ${goal}
 Intent rules: 
-${intentRules(category, intent).map((r) => `- ${r}`).join("\n")} CRITICAL CATEGORY RULES: 
+${intentRules(category, intent).map((r) => `- ${r}`).join("\n")} 
+CRITICAL CATEGORY RULES: 
 ${ 
  category === "dating" 
  ? ` 
@@ -161,7 +162,8 @@ TEEN:
 - Do not force memes or try-hard humor 
 ` 
  : ` 
-RELATIONSHIP / FRIENDSHIP / FAMILY / WORK (STRICT MODE): - MUST be serious and grounded 
+RELATIONSHIP / FRIENDSHIP / FAMILY / WORK (STRICT MODE): 
+- MUST be serious and grounded 
 - NO jokes 
 - NO flirting 
 - NO sarcasm 
@@ -173,7 +175,9 @@ RELATIONSHIP / FRIENDSHIP / FAMILY / WORK (STRICT MODE): - MUST be serious and g
 - Do not turn criticism into banter 
 - Do not answer with charm, wit, or humor 
 - Do not sound cute, slick, or clever 
-- When the message is criticism, respond with maturity and accountability - Prefer acknowledging the feeling over defending the ego 
+- When the message is criticism, respond with maturity and accountability 
+- Prefer acknowledging the feeling over defending the ego 
+- In relationship category, short negative messages must still be treated as serious relationship criticism - Do not wait for the user to explicitly say "in this relationship" 
 PRIORITIZE: 
 - emotional intelligence 
 - calm tone 
@@ -182,10 +186,11 @@ PRIORITIZE:
 - maturity 
 - empathy 
 - clear communication 
-If the message is negative, critical, tense, dismissive, or hurtful: - acknowledge it 
-- do NOT deflect 
+If the message is negative, critical, tense, dismissive, or hurtful: 
+- acknowledge it 
+- do NOT deflect
 - do NOT joke 
-- do NOT minimize
+- do NOT minimize 
 - do NOT get cute 
 - do NOT turn it into banter 
 Responses should feel: 
@@ -225,9 +230,9 @@ Message to respond to:
 ${data.message} 
 Category: 
 ${data.category} 
-Intent: 
+Intent:
 ${data.intent} 
-Goal:
+Goal: 
 ${data.goal} 
 Issue: 
 ${data.issue || "None"} 
@@ -240,7 +245,7 @@ Important:
 - Stay aligned with the chosen intent. 
 - Keep the replies easy to send as real texts. 
 - Directly respond to the actual message. 
-- If category is relationship, friendship, family, or work, keep the tone serious and mature. - If the incoming message is critical or tense, do not respond playfully. 
+- Treat the selected category as the source of truth, even if the message is short or ambiguous. - If category is relationship, friendship, family, or work, keep the tone serious and mature. - For relationship category, assume the message is about a real relationship issue unless the message clearly prove- If the incoming message is critical, tense, dismissive, or insulting, do not respond playfully. - In relationship category, do not interpret criticism as flirting, teasing, or banter. 
 Return ONLY a valid JSON array of 5 strings. 
 `.trim(); 
 } 
@@ -266,12 +271,10 @@ app.get("/health", (_req, res) => {
 app.post("/reply", async (req, res) => { 
  try { 
  const message = clean(req.body?.message); 
- const category = normalizeCategory(req.body?.category); 
- const intent = normalizeIntent(category, req.body?.intent); 
- const goal = normalizeGoal(category, req.body?.goal); 
- const issue = clean(req.body?.issue); 
- const previousReplies = toArray(req.body?.previousReplies); 
- const conversationContext = toArray(req.body?.conversationContext);  if (!message) {
+ const category = normalizeCategory(req.body?.category);
+ const intent = normalizeIntent(category, req.body?.intent);  const goal = normalizeGoal(category, req.body?.goal);  const issue = clean(req.body?.issue); 
+ const previousReplies = toArray(req.body?.previousReplies);  const conversationContext = toArray(req.body?.conversationContext); 
+ if (!message) { 
  return res.status(400).json({ error: "Missing message" });  } 
  const completion = await openai.chat.completions.create({  model: MODEL, 
  temperature: category === "dating" || category === "teen" ? 0.9 : 0.45,  messages: [ 
