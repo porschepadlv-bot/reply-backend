@@ -90,10 +90,10 @@ function intentRules(category, intent) {
  "No unnecessary defensiveness."
  ], 
  closure: [ 
- "Final and self-respecting.", 
- "Do not leave the door half-open.", 
- "No begging or chasing." 
- ], 
+ "Final, calm, and emotionally grounded.", 
+ "No humor, no sarcasm, no light tone.", 
+ "Acknowledge the situation with maturity.", 
+ "Can express acceptance or boundary without sounding cold.",  "Do NOT sound casual, playful, or dismissive."  ], 
  accountability: [ 
  "Take responsibility cleanly where appropriate.",  "No excuses.", 
  "Sound sincere, not performative." 
@@ -122,7 +122,8 @@ function intentRules(category, intent) {
  return rules[intent] || rules.resolution; 
 } 
 function buildSystemPrompt(category, intent, goal) {  return ` 
-You write text-message replies for a mobile app. Return exactly 5 reply options. 
+You write text-message replies for a mobile app. 
+Return exactly 5 reply options. 
 GLOBAL RULES: 
 - Sound like a real person texting. 
 - Usually 1 line, max 2 short lines. 
@@ -134,9 +135,9 @@ GLOBAL RULES:
 - No robotic or corporate wording. 
 - Avoid repeating structure. 
 - Match the category and intent EXACTLY. 
-Category: ${category} 
+Category: ${category}
 Intent: ${intent} 
-Goal: ${goal}
+Goal: ${goal} 
 Intent rules: 
 ${intentRules(category, intent).map((r) => `- ${r}`).join("\n")} 
 CRITICAL CATEGORY RULES: 
@@ -178,16 +179,19 @@ RELATIONSHIP / FRIENDSHIP / FAMILY / WORK (STRICT MODE):
 - When the message is criticism, respond with maturity and accountability 
 - Prefer acknowledging the feeling over defending the ego 
 - In relationship category, short negative messages must still be treated as serious relationship criticism - Do not wait for the user to explicitly say "in this relationship" 
-- In family category, do NOT use humor, sarcasm, or emojis under any circumstance - Treat family situations as emotionally sensitive by default 
-- If the message involves exclusion, rejection, or hurt, respond with calm seriousness - Do not make the reply sound playful, cheeky, or casual 
+- In family category, do NOT use humor, sarcasm, or emojis under any circumstance 
+- Treat family situations as emotionally sensitive by default 
+- If the message involves exclusion, rejection, or hurt, respond with calm seriousness 
+- Do not make the reply sound playful, cheeky, or casual 
+- If intent is closure in family category, tone must still remain serious, calm, and emotionally grounded (never casual 
 PRIORITIZE: 
 - emotional intelligence 
 - calm tone 
-- understanding 
+- understanding
 - accountability when needed 
 - maturity 
 - empathy 
-- clear communication
+- clear communication 
 If the message is negative, critical, tense, dismissive, or hurtful: - acknowledge it 
 - do NOT deflect 
 - do NOT joke 
@@ -226,10 +230,10 @@ function buildUserPrompt(data) {
  .filter(Boolean) 
  .slice(-12) 
  .join("\n"); 
- return ` 
+ return `
 Message to respond to: 
 ${data.message} 
-Category:
+Category: 
 ${data.category} 
 Intent: 
 ${data.intent} 
@@ -248,7 +252,12 @@ Important:
 - Directly respond to the actual message. 
 - Treat the selected category as the source of truth, even if the message is short or ambiguous. - If category is relationship, friendship, family, or work, keep the tone serious and mature. - For relationship category, assume the message is about a real relationship issue unless the message clearly prove- In relationship category, do not interpret criticism as flirting, teasing, or banter. 
 - In family category, default to a serious, respectful, emotionally aware tone. 
-- If the family message suggests rejection, exclusion, or hurt, do not respond with jokes, surprise humor, or casual ba- If the incoming message is critical, tense, dismissive, or insulting, do not respond playfully. 
+- If the family message suggests rejection, exclusion, or hurt, do not respond with jokes, surprise humor, or casual ba- If category is family AND intent is closure: 
+ - Do NOT use casual language like "that's a bummer", "wow", "haha" 
+ - Do NOT ask playful follow-up questions 
+ - Do NOT sound socially light 
+ - Keep tone calm, respectful, and emotionally aware 
+- If the incoming message is critical, tense, dismissive, or insulting, do not respond playfully. 
 Return ONLY a valid JSON array of 5 strings. 
 `.trim(); 
 } 
@@ -263,14 +272,14 @@ function parseReplies(text) {
  .split("\n") 
  .map((line) => line.replace(/^\s*[-*•\d.)]+\s*/, "").trim()) 
  .filter(Boolean) 
- .slice(0, 5); 
+ .slice(0, 5);
 } 
 app.get("/", (_req, res) => { 
  res.send("AI Reply Server Running"); 
 }); 
 app.get("/health", (_req, res) => { 
  res.json({ ok: true, model: MODEL }); 
-});
+}); 
 app.post("/reply", async (req, res) => { 
  try { 
  const message = clean(req.body?.message); 
@@ -302,15 +311,14 @@ app.post("/reply", async (req, res) => {
  return res.status(500).json({ error: "No replies generated" });  } 
  return res.json({ replies }); 
  } catch (error) { 
- console.error("Reply error:", error); 
+ console.error("Reply error:", error);
  return res.status(500).json({ 
  error: "Failed to generate replies", 
  details: 
- process.env.NODE_ENV === "production" 
- ? undefined 
+ process.env.NODE_ENV === "production"  ? undefined 
  : String(error?.message || error) 
  }); 
  } 
-});
+}); 
 app.listen(PORT, () => { 
  console.log(`AI Reply Server Running on port ${PORT}`); });
