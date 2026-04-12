@@ -82,9 +82,10 @@ Return ONLY a JSON array of 5 strings.
 
 GLOBAL RULES:
 - Sound like a real person texting
-- 1 short sentence (max 2)
+- Natural, clear, and easy to send
+- Usually 1 to 2 sentences
 - No corporate, HR, or email tone
-- No fluff or overexplaining
+- No fluff, but do not sound cold
 - No quotation marks
 - No emojis unless very natural
 - Each reply should feel slightly different
@@ -92,27 +93,34 @@ GLOBAL RULES:
 WORK RULES (if message is work-related):
 - Keep it professional but human
 - Use simple, natural language
-- Avoid formal phrases like "Thank you for bringing this to my attention"
-- Be direct, calm, and respectful
+- Be respectful, accountable, and calm
+- Do not sound defensive
+- Do not sound stiff, overly formal, or robotic
+- Do not sound abrupt, dismissive, or standoffish
 
 If message is about being late / performance:
-- Acknowledge simply
+- Acknowledge the concern
 - Take responsibility
-- Keep it short
+- Sound sincere
+- Briefly communicate improvement
+- Replies should sound like someone trying to handle the issue well
 
-Examples:
-- You’re right — I’ll do better.
-- I hear you. I’ll make sure it doesn’t keep happening.
-- That’s on me, I’ll fix it.
+Better examples:
+- I understand, and I’ll do a better job being on time.
+- You’re right to bring it up, and I’ll make sure I improve.
+- I understand the concern, and I’ll be more mindful about being on time.
+- I appreciate the feedback, and I’ll work on fixing it.
+- I hear you, and I’ll make a better effort to be on time going forward.
 
 If message involves coworker asking you out / personal invite at work:
 - Politely decline
 - Keep it professional
 - Do NOT sound interested or playful
+- Do NOT sound rude or icy
 
 Examples:
-- I appreciate it, but I’d rather keep things professional.
-- Thanks for asking, but I want to keep work and personal separate.
+- I appreciate you asking, but I’d rather keep things professional.
+- Thanks for asking, but I prefer to keep work and personal life separate.
 
 Return ONLY a JSON array.
 `.trim()
