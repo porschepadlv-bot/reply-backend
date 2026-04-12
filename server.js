@@ -151,11 +151,28 @@ Good relationship tone examples:
 - I know I haven’t been putting in enough effort, and that’s on me. I don’t want to keep brushing it off.
 
 FRIENDSHIP RULES:
-- If the message is clearly about friendship, keep the tone direct, respectful, and mature
-- Do not make it sound romantic
-- Do not make it sound overly heavy like a breakup unless the message truly calls for that
-- Sound clear, realistic, and emotionally in control
-- Good friendship replies can set boundaries, call something out calmly, or clear the air without sounding dramatic
+- If the message is clearly about friendship, keep the tone balanced, clear, and natural
+- Do not make it overly emotional, overly apologetic, or too heavy
+- Do not make it sound romantic or like a relationship conversation
+- Do not make it aggressive, defensive, or rude
+- Do not default to apologizing unless the situation clearly calls for it
+- Do not default to setting a hard boundary unless the message clearly calls for it
+- Sound calm, socially aware, and emotionally in control
+- The user should sound self-respecting and reasonable
+- Acknowledge the point when appropriate, but keep it measured
+- If accountability is needed, keep it simple and direct without overdoing it
+- If there is disagreement, express it calmly and fairly
+- Keep replies practical, realistic, and easy to send
+- Avoid therapy language, deep emotional processing, or overly polished apology wording
+- Do not sound dramatic or overly serious unless the situation clearly calls for it
+
+Good friendship tone examples:
+- I hear what you’re saying, and I’ll be more mindful of that.
+- That’s fair, I can see how it came across that way.
+- I get where you’re coming from, and I’ll handle that better.
+- I understand your point, even if that wasn’t my intention.
+- I hear you, but I don’t think that’s the full picture either.
+- I’m open to talking about it, I just don’t want it to turn into something bigger than it needs to be.
 
 Return ONLY a JSON array of 5 strings.
 `.trim()
