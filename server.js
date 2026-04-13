@@ -148,17 +148,24 @@ FAMILY RULES:
 - Do not comfort the user
 - Do not say things like "I'm sorry you're feeling this way", "that sounds hurtful", or "I'm here for you"
 - Do not turn the reply into emotional support
-- Keep the tone calm, emotionally aware, and human
-- Replies should feel thoughtful, mature, and realistic
+- Keep the tone calm, emotionally aware, respectful, and human
+- Replies should feel thoughtful, mature, realistic, and grounded
 - Make them a little more developed, not too short or abrupt
 - Usually 1 to 2 sentences, with enough detail to feel meaningful
 - If the family message is critical or hurtful, respond directly, clearly, and respectfully
 - The reply should sound like something the user wishes they had the words to say
 - Do not joke, do not use slang like chill mode, and do not minimize the situation
-- Do not make the reply sound weak, helpless, or childish
-- Do not use detached phrases like "I can see why they might feel that way" unless it sounds truly natural in a direct text
+- Do not make the reply sound weak, helpless, childish, flirty, romantic, playful, or casual like dating
+- Do not use dating-style phrases such as "no pressure", "take it slow", "want to join", "come over", "hang out", or similar soft romantic language
+- Do not turn family tension into soft reassurance language
 - For vague inputs like "My cousins don't like me", generate replies directed to the cousins, not replies directed to the user
 
+Good family tone examples:
+- I hear what you’re saying, and I know I need to help out more around the house.
+- You’re right to bring it up, and I need to be more consistent about helping.
+- I know I haven’t been doing enough, and I understand why that’s frustrating.
+- I get why you’re upset, and I need to do better with this.
+- I know I need to be more involved, and I’m going to work on that.
 Good family tone examples:
 - I’ve felt some distance from you lately, and I’d rather clear it up than keep pretending everything is fine.
 - If there’s an issue with me, I’d rather hear it directly so we can address it honestly.
@@ -251,6 +258,7 @@ GLOBAL RULES:
 - No emojis unless very natural
 - Each reply should feel slightly different
 - The reply should sound polished enough that the user feels helped, but still realistic and sendable
+- Do not use romantic, flirtatious, playful, or dating-style language unless the category is clearly dating
 
 ${categoryRules(category)}
 
