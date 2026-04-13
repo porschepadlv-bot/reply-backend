@@ -141,6 +141,7 @@ Good friendship tone examples:
  case "family":
  return `
 FAMILY RULES:
+- NEVER use the phrases "no pressure", "take it slow", or "one step at a time"
 - If the message is clearly about family, write the reply as something the user would actually send directly to their family member
 - Use first-person language like I, me, and my
 - Do not describe the situation from the outside
