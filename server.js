@@ -58,28 +58,28 @@ function parseReplies(text) {
 function enforceReplies(category, replies, message) {
  let cleaned = replies.map((x) => clean(x)).filter(Boolean);
 
- if (category === "family") {
- const bannedPhrases = [
- "no pressure",
- "take it slow",
- "no rush",
- "one step at a time"
- ];
+if (category === "family") {
+const bannedPhrases = [
+"no pressure",
+"take it slow",
+"no rush",
+"one step at a time"
+];
 
- cleaned = cleaned.filter((reply) => {
- const lower = reply.toLowerCase();
- return !bannedPhrases.some((phrase) => lower.includes(phrase));
- });
+cleaned = cleaned.filter((reply) => {
+const lower = reply.toLowerCase();
+const blocked = bannedPhrases.some((phrase) => lower.includes(phrase));
+return !blocked;
+});
 
- if (cleaned.length < 5) {
- return [
- "I hear what you’re saying, and I know I need to put in more effort.",
- "You’re right to bring it up, and I need to do better with this.",
- "I know I haven’t been doing enough, and I understand why that’s frustrating.",
- "I hear your point, and I need to be more consistent about helping out.",
- "I know this has been frustrating, and I’m going to work on doing better."
- ];
- }
+return [
+"I hear what you’re saying, and I know I need to put in more effort.",
+"You’re right to bring it up, and I need to do better with this.",
+"I know I haven’t been doing enough, and I understand why that’s frustrating.",
+"I hear your point, and I need to be more consistent about helping out.",
+"I know this has been frustrating, and I’m going to work on doing better."
+];
+}
  }
 
  return cleaned.slice(0, 5);
