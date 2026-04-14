@@ -211,6 +211,7 @@ res.send("AI Reply Server Running V999 FAMILY RESET");
 app.post("/reply", async (req, res) => {
  try {
  const category = clean(req.body?.category).toLowerCase();
+ console.log("CATEGORY RECEIVED:", category);
  const message = clean(req.body?.message);
  const previousReplies = Array.isArray(req.body?.previousReplies)
  ? req.body.previousReplies.map((x) => clean(x)).filter(Boolean).slice(0, 20)
