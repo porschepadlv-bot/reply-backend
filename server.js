@@ -70,7 +70,7 @@ const lower = reply.toLowerCase();
 return !bannedPhrases.some((phrase) => lower.includes(phrase));
 });
 
-// If filtering leaves too few replies, fall back to original replies
+// If filtering removes too many, fall back safely
 if (cleaned.length < 3) {
 return original.slice(0, 5);
 }
@@ -80,7 +80,6 @@ return cleaned.slice(0, 5);
 
 return original.slice(0, 5);
 }
-
 function categoryRules(category) {
  switch (category) {
 
