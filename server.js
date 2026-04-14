@@ -26,35 +26,6 @@ function stripCodeFences(text) {
 }
 
 function parseReplies(text) {
- function enforceReplies(category, replies, message) {
-let cleaned = replies.map((x) => clean(x)).filter(Boolean);
-
-if (category === "family") {
-const bannedPhrases = [
-"no pressure",
-"take it slow",
-"no rush",
-"one step at a time"
-];
-
-cleaned = cleaned.filter((reply) => {
-const lower = reply.toLowerCase();
-return !bannedPhrases.some((phrase) => lower.includes(phrase));
-});
-
-if (cleaned.length < 5) {
-return [
-"I hear what you’re saying, and I know I need to put in more effort.",
-"You’re right to bring it up, and I need to do better with this.",
-"I know I haven’t been doing enough, and I understand why that’s frustrating.",
-"I hear your point, and I need to be more consistent about helping out.",
-"I know this has been frustrating, and I’m going to work on doing better."
-];
-}
-}
-
-return cleaned.slice(0, 5);
-}
  const normalized = stripCodeFences(text);
 
  try {
@@ -82,6 +53,36 @@ return cleaned.slice(0, 5);
  )
  .filter(Boolean)
  .slice(0, 5);
+}
+
+function enforceReplies(category, replies, message) {
+ let cleaned = replies.map((x) => clean(x)).filter(Boolean);
+
+ if (category === "family") {
+ const bannedPhrases = [
+ "no pressure",
+ "take it slow",
+ "no rush",
+ "one step at a time"
+ ];
+
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !bannedPhrases.some((phrase) => lower.includes(phrase));
+ });
+
+ if (cleaned.length < 5) {
+ return [
+ "I hear what you’re saying, and I know I need to put in more effort.",
+ "You’re right to bring it up, and I need to do better with this.",
+ "I know I haven’t been doing enough, and I understand why that’s frustrating.",
+ "I hear your point, and I need to be more consistent about helping out.",
+ "I know this has been frustrating, and I’m going to work on doing better."
+ ];
+ }
+ }
+
+ return cleaned.slice(0, 5);
 }
 
 function categoryRules(category) {
@@ -230,10 +231,11 @@ GENERAL RULES:
  }
 }
 
-
 app.get("/", (_req, res) => {
-res.send("AI Reply Server Running V999 FAMILY RESET");
-});app.get("/health", (_req, res) => {
+ res.send("AI Reply Server Running V999 FAMILY RESET");
+});
+
+app.get("/health", (_req, res) => {
  res.json({ ok: true, model: MODEL });
 });
 
@@ -302,8 +304,8 @@ Return ONLY a JSON array of 5 strings.
  });
 
  const text = completion.choices?.[0]?.message?.content || "";
-const parsedReplies = parseReplies(text);
-const replies = enforceReplies(category, parsedReplies, message);
+ const parsedReplies = parseReplies(text);
+ const replies = enforceReplies(category, parsedReplies, message);
 
  if (!replies.length) {
  return res.status(500).json({ error: "No replies generated" });
@@ -313,9 +315,9 @@ const replies = enforceReplies(category, parsedReplies, message);
  } catch (error) {
  console.error("Reply error FULL:", error);
 
-return res.status(500).json({
-error: error.message || "Failed to generate replies"
-});
+ return res.status(500).json({
+ error: error.message || "Failed to generate replies"
+ });
  }
 });
 
