@@ -85,20 +85,34 @@ return cleaned.slice(0, 5);
 return replies.slice(0, 5);
 }
 function categoryRules(category) {
- if (category === "family") {
+ switch (category) {
+
+ case "family":
  return `
 FAMILY RULES:
-- Respond directly to the family member
-- Be calm, clear, and respectful
-- No therapy tone
-- No "no pressure", "take it slow", or passive phrases
-- Be direct and accountable when needed
+- Write the reply as something the user would actually text directly to their family member
+- Use first-person language like I, me, and my
+- Keep the tone calm, human, and emotionally real
+- The reply can show hurt, disappointment, or confusion when it fits
+- Do not make the reply cold or emotionally blank
+- Do not sound like a therapist or outside observer
+- Avoid generic filler phrases
+- Make the reply feel specific to the situation
+- Usually 1 to 2 sentences
+- If the message is hurtful, respond honestly without being aggressive
+
+Examples:
+- That honestly hurts to hear, especially coming from you.
+- I’m not going to pretend that doesn’t affect me.
+- I wish we could talk about this more directly.
+- Hearing that like this is actually hard for me.
+- I get you’re frustrated, but that still doesn’t feel good to hear.
 `;
- }
 
+ default:
  return "";
+ }
 }
-
 app.get("/", (_req, res) => {
  res.send("AI Reply Server Running V1000 CLEAN");
 });
