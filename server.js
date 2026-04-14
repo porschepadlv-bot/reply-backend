@@ -87,26 +87,22 @@ function categoryRules(category) {
 case "family":
 return `
 FAMILY RULES:
-- Write exactly what the user would text back
-- No therapy tone, no analysis, no emotional processing
-- No "that stings", "I feel", "I want to understand", etc
-- Do not sound like a counselor, coach, or mediator
+- Write only as a direct text message the user can send to their family member right now
+- The reply must be addressed to the other person involved, never about them in the third person
+- Never say "they", "them", "my kids", "my mom", or describe the people from the outside unless the original message itself requires it
+- Do not write commentary, analysis, reflection, or advice
+- Do not write questions about the situation as an outside observer
+- No therapy tone, no counseling tone, no emotional processing language
 - Keep it natural, direct, and realistic
-- 1–2 sentences max
-- Slight emotion is OK (frustration, confusion), but keep it real
-- Be specific to what was said, not generic
+- Usually 1 to 2 sentences
+- Make the reply specific to what was said
 
-STYLE:
-- Speak plainly, like a real conversation
-- It’s okay to question, push back, or be a little blunt
-- Don’t over-explain
-
-GOOD EXAMPLES:
-- What do you mean I don’t get you?
-- If something’s bothering you, just say it to me.
-- I’m trying, but I can’t fix what I don’t understand.
-- That’s not really fair.
-- If that’s how you feel, we should actually talk about it.
+GOOD STYLE:
+- What do you mean by that?
+- If you feel that way, tell me what I’m missing.
+- I’m trying to understand you, but you need to talk to me directly.
+- That’s hard to hear, but I want you to be honest with me.
+- If I’m missing something, then tell me clearly.
 `;
 
  default:
