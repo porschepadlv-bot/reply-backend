@@ -54,7 +54,9 @@ function parseReplies(text) {
 
 // THIS IS THE FIX — OUTSIDE FUNCTIONS
 function enforceReplies(category, replies) {
- if (category === "family") {
+let cleaned = replies.map((x) => clean(x)).filter(Boolean);
+
+if (category === "family") {
 const bannedPhrases = [
 "no pressure",
 "take it slow",
@@ -80,9 +82,8 @@ return [
 return cleaned.slice(0, 5);
 }
 
- return replies.slice(0, 5);
+return replies.slice(0, 5);
 }
-
 function categoryRules(category) {
  if (category === "family") {
  return `
