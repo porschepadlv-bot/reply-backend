@@ -45,7 +45,6 @@ function parseReplies(text) {
  .map((line) =>
  line
  .replace(/^```(?:json)?/i, "")
- .replace(/^\s*[$begin:math:display$$end:math:display$,]+\s*$/g, "")
  .replace(/^\s*[-*•\d.)]+\s*/, "")
  .replace(/^"+|"+$/g, "")
  .replace(/",?\s*$/g, "")
@@ -53,6 +52,37 @@ function parseReplies(text) {
  )
  .filter(Boolean)
  .slice(0, 5);
+}
+
+function familyReplyAllowed(reply) {
+ const lower = reply.toLowerCase();
+
+ const bannedPhrases = [
+ "no pressure",
+ "take it slow",
+ "no rush",
+ "one step at a time",
+ "want to join",
+ "come over",
+ "hang out",
+ "we can take it slow",
+ "i get where you're coming from — no rush",
+ "i get where you’re coming from — no rush"
+ ];
+
+ return !bannedPhrases.some((phrase) => lower.includes(phrase));
+}
+
+function cleanRepliesForCategory(category, replies) {
+ let cleaned = replies
+ .map((x) => clean(x))
+ .filter(Boolean);
+
+ if (category === "family") {
+ cleaned = cleaned.filter(familyReplyAllowed);
+ }
+
+ return cleaned.slice(0, 5);
 }
 
 function categoryRules(category) {
@@ -82,6 +112,7 @@ Good dating tone examples:
 - Bored too, I’ve just been relaxing. How’s your day been?
 - Yeah, it’s been a lazy day on my end too. Anything interesting happen on your side?
 `;
+
  case "relationship":
  return `
 RELATIONSHIP RULES:
@@ -110,6 +141,7 @@ Good relationship tone examples:
 - I understand why this hurt you, and I’m sorry. I know I need to be better about this.
 - I know I haven’t been putting in enough effort, and that’s on me. I don’t want to keep brushing it off.
 `;
+
  case "friendship":
  return `
 FRIENDSHIP RULES:
@@ -138,37 +170,38 @@ Good friendship tone examples:
 - I hear you, but I don’t think that’s the full picture either.
 - I’m open to talking about it, I just don’t want it to turn into something bigger than it needs to be.
 `;
+
  case "family":
  return `
 FAMILY RULES:
 - If the message is clearly about family, write the reply as something the user would actually send directly to their family member
 - Use first-person language like I, me, and my
-- Do not describe the situation from the outside
-- Do not sound like a therapist, mediator, counselor, or supportive friend
+- Keep the tone calm, respectful, emotionally aware, direct, and realistic
+- Replies should feel mature and grounded, not soft, vague, or overly therapeutic
+- Usually 1 to 2 sentences, with enough detail to feel meaningful
+- If the family message is critical, frustrating, or calling something out, respond directly and respectfully
+- If accountability makes sense, own it clearly
+- The reply should sound like something the user wishes they had the words to say
+
+STRICTLY FORBIDDEN IN FAMILY:
+- Do not sound flirty, romantic, playful, teasing, or casual like dating
+- Do not use dating-style reassurance language
+- Do not use phrases like "no pressure", "take it slow", "no rush", "one step at a time", "want to join", "come over", or "hang out"
+- Do not sound like a therapist, mediator, counselor, coach, or supportive friend
 - Do not comfort the user
 - Do not say things like "I'm sorry you're feeling this way", "that sounds hurtful", or "I'm here for you"
 - Do not turn the reply into emotional support
-- Keep the tone calm, emotionally aware, and human
-- Replies should feel thoughtful, mature, and realistic
-- Make them a little more developed, not too short or abrupt
-- Usually 1 to 2 sentences, with enough detail to feel meaningful
-- If the family message is critical or hurtful, respond directly, clearly, and respectfully
-- The reply should sound like something the user wishes they had the words to say
-- Do not joke, do not use slang like chill mode, and do not minimize the situation
-- Do not make the reply sound weak, helpless, or childish
-- Do not use detached phrases like "I can see why they might feel that way" unless it sounds truly natural in a direct text
-- For vague inputs like "My cousins don't like me", generate replies directed to the cousins, not replies directed to the user
+- Do not joke, minimize the situation, or sound weak, helpless, or childish
+- Do not write generic filler reassurance
 
 Good family tone examples:
-- I’ve felt some distance from you lately, and I’d rather clear it up than keep pretending everything is fine.
-- If there’s an issue with me, I’d rather hear it directly so we can address it honestly.
-- I don’t want there to be weird tension between us, so I’m being direct about it.
-- If I’ve done something to create distance, I’m open to talking about it.
-- I’ve noticed things feel off between us, and I’d rather address it than leave it hanging.
-- Sorry Mom, I know I’ve been slacking lately, and I’m going to do better.
-- I know I haven’t been helping the way I should, and I understand why you’re frustrated.
-- You’re right to call me out on it, and I’ll make more of an effort going forward.
+- I hear what you’re saying, and I know I need to help out more around the house.
+- You’re right to bring it up, and I need to be more consistent about helping.
+- I know I haven’t been doing enough, and I understand why that’s frustrating.
+- I get why you’re upset, and I need to do better with this.
+- I know I need to be more involved, and I’m going to work on that.
 `;
+
  case "work":
  return `
 WORK RULES:
@@ -184,6 +217,7 @@ Good work tone examples:
 - You’re right to bring it up, and I’ll make sure I improve.
 - I appreciate you asking, but I’d rather keep things professional.
 `;
+
  default:
  return `
 GENERAL RULES:
@@ -218,7 +252,7 @@ app.post("/reply", async (req, res) => {
 
  const completion = await openai.chat.completions.create({
  model: MODEL,
- temperature: 0.72,
+ temperature: 0.45,
  messages: [
  {
  role: "system",
@@ -268,7 +302,8 @@ Return ONLY a JSON array of 5 strings.
  });
 
  const text = completion.choices?.[0]?.message?.content || "";
- const replies = parseReplies(text);
+ const parsedReplies = parseReplies(text);
+ const replies = cleanRepliesForCategory(category, parsedReplies);
 
  if (!replies.length) {
  return res.status(500).json({ error: "No replies generated" });
