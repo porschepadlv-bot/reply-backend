@@ -45,6 +45,7 @@ function parseReplies(text) {
  .map((line) =>
  line
  .replace(/^```(?:json)?/i, "")
+ .replace(/^\s*[$begin:math:display$$end:math:display$,]+\s*$/g, "")
  .replace(/^\s*[-*•\d.)]+\s*/, "")
  .replace(/^"+|"+$/g, "")
  .replace(/",?\s*$/g, "")
@@ -67,16 +68,16 @@ function familyReplyAllowed(reply) {
  "hang out",
  "we can take it slow",
  "i get where you're coming from — no rush",
- "i get where you’re coming from — no rush"
+ "i get where you’re coming from — no rush",
+ "i get where you're coming from - no rush",
+ "i get where you’re coming from - no rush"
  ];
 
  return !bannedPhrases.some((phrase) => lower.includes(phrase));
 }
 
 function cleanRepliesForCategory(category, replies) {
- let cleaned = replies
- .map((x) => clean(x))
- .filter(Boolean);
+ let cleaned = replies.map((x) => clean(x)).filter(Boolean);
 
  if (category === "family") {
  cleaned = cleaned.filter(familyReplyAllowed);
