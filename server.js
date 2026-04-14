@@ -87,19 +87,12 @@ FAMILY RULES:
 - Write only as a direct text message the user can send to their family member right now
 - The reply must be addressed directly to the other person involved
 - Do not write about them like an outside observer
-- Do not use third-person phrasing like "they", "them", "my kids", "my mom", "my dad", unless absolutely necessary
+- Do not use third-person phrasing like "they", "them", "my kids", "my mom", or "my dad" unless absolutely necessary
 - Do not write commentary, reflection, analysis, journaling, or advice
 - No therapy tone, no counseling tone, no emotional processing language
 - Keep it natural, direct, realistic, and sendable
 - Usually 1 to 2 sentences
 - Make the reply specific to what was said
-
-BAD STYLE:
-- They need to be more specific
-- I want to understand them more
-- That stings to hear
-- I’m processing this
-- This makes me feel unseen
 
 GOOD STYLE:
 - What do you mean by that?
@@ -115,7 +108,7 @@ GOOD STYLE:
 }
 
 app.get("/", (_req, res) => {
- res.send("AI Reply Server Running V1001");
+ res.send("AI Reply Server Running V1002");
 });
 
 app.get("/health", (_req, res) => {
@@ -148,15 +141,20 @@ app.post("/reply", async (req, res) => {
  content: `
 Return ONLY a JSON array of 5 replies.
 
-RULES:
-- Must be direct text messages the user can send
-- No therapy tone
+GLOBAL RULES:
+- Every reply must be a message the user can copy and send immediately
+- Never write as a coach, therapist, counselor, mediator, or outside observer
 - No advice tone
-- No third-person commentary
-- No quotes
-- Keep it natural and real
+- No emotional commentary from the outside
+- No analysis
+- No journaling
+- No reflection about the situation
+- No quotation marks around replies
+- Use plain, natural, everyday text-message language
+- Keep replies specific to the message, not generic filler
+
 ${categoryRules(category)}
-`
+`.trim()
  },
  {
  role: "user",
@@ -183,11 +181,9 @@ ${categoryRules(category)}
  }
 
  return res.json({ replies });
-
  } catch (error) {
  console.error("ERROR:", error);
 
- // ALWAYS return valid replies (never error)
  return res.json({
  replies: [
  "What do you mean by that?",
@@ -197,31 +193,6 @@ ${categoryRules(category)}
  "That’s hard to hear, but I want you to be honest with me."
  ]
  });
- }
-});
-
- const text = completion.choices?.[0]?.message?.content || "";
- const parsed = parseReplies(text);
-
- if (!parsed || parsed.length === 0) {
- return res.json({
- replies: [
- "What do you mean by that?",
- "If you feel that way, tell me what I’m missing.",
- "I’m trying to understand you, but you need to talk to me directly.",
- "If I’m getting it wrong, then tell me clearly.",
- "That’s hard to hear, but I want you to be honest with me."
- ]
- });
- }
-
- const replies = enforceReplies(category, parsed);
- console.log("REPLIES SENT:", replies);
-
- return res.json({ replies });
- } catch (error) {
- console.error("ERROR:", error);
- return res.status(500).json({ error: "Server failed" });
  }
 });
 
