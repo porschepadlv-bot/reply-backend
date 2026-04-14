@@ -201,11 +201,10 @@ GENERAL RULES:
  }
 }
 
-app.get("/", (_req, res) => {
- res.send("AI Reply Server Running");
-});
 
-app.get("/health", (_req, res) => {
+app.get("/", (_req, res) => {
+res.send("AI Reply Server Running V999 FAMILY RESET");
+});app.get("/health", (_req, res) => {
  res.json({ ok: true, model: MODEL });
 });
 
