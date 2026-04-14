@@ -75,18 +75,6 @@ return cleaned.slice(0, 5);
 return cleaned.slice(0, 5);
 }
 
-cleaned = cleaned.filter((reply) => {
-const lower = reply.toLowerCase();
-return !bannedPhrases.some((phrase) => lower.includes(phrase));
-});
-
-
-
-return cleaned.slice(0, 5);
-}
-
-return replies.slice(0, 5);
-}
 function categoryRules(category) {
  switch (category) {
 
