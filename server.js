@@ -69,15 +69,18 @@ const lower = reply.toLowerCase();
 return !bannedPhrases.some((phrase) => lower.includes(phrase));
 });
 
-if (cleaned.length < 4) {
-return [
-"I hear what you’re saying, and I know I need to put in more effort.",
-"You’re right to bring it up, and I need to do better with this.",
-"I know I haven’t been doing enough, and I understand why that’s frustrating.",
-"I hear your point, and I need to be more consistent about helping out.",
-"I know this has been frustrating, and I’m going to work on doing better."
-];
+return cleaned.slice(0, 5);
 }
+
+return cleaned.slice(0, 5);
+}
+
+cleaned = cleaned.filter((reply) => {
+const lower = reply.toLowerCase();
+return !bannedPhrases.some((phrase) => lower.includes(phrase));
+});
+
+
 
 return cleaned.slice(0, 5);
 }
