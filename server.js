@@ -126,7 +126,7 @@ ${categoryRules(category)}
 
  const parsed = parseReplies(text);
  const replies = enforceReplies(category, parsed);
-
+ console.log("REPLIES SENT:", replies);
  return res.json({ replies });
 
  } catch (error) {
