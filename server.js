@@ -128,7 +128,15 @@ app.post("/reply", async (req, res) => {
  const message = clean(req.body?.message);
 
  if (!message) {
- return res.status(400).json({ error: "Missing message" });
+ return res.json({
+ replies: [
+ "What do you mean by that?",
+ "If you feel that way, tell me what I’m missing.",
+ "I’m trying to understand you, but you need to talk to me directly.",
+ "If I’m getting it wrong, then tell me clearly.",
+ "That’s hard to hear, but I want you to be honest with me."
+ ]
+ });
  }
 
  const completion = await openai.chat.completions.create({
@@ -140,20 +148,15 @@ app.post("/reply", async (req, res) => {
  content: `
 Return ONLY a JSON array of 5 replies.
 
-GLOBAL RULES:
-- Every reply must be a message the user can copy and send immediately
-- Never write as a coach, therapist, counselor, mediator, or outside observer
+RULES:
+- Must be direct text messages the user can send
+- No therapy tone
 - No advice tone
-- No emotional commentary from the outside
-- No analysis
-- No journaling
-- No reflection about the situation
-- No quotation marks around replies
-- Use plain, natural, everyday text-message language
-- Keep replies specific to the message, not generic filler
-
+- No third-person commentary
+- No quotes
+- Keep it natural and real
 ${categoryRules(category)}
-`.trim()
+`
  },
  {
  role: "user",
@@ -161,6 +164,41 @@ ${categoryRules(category)}
  }
  ]
  });
+
+ const text = completion.choices?.[0]?.message?.content || "";
+ const parsed = parseReplies(text);
+
+ let replies;
+
+ if (!parsed || parsed.length === 0) {
+ replies = [
+ "What do you mean by that?",
+ "If you feel that way, tell me what I’m missing.",
+ "I’m trying to understand you, but you need to talk to me directly.",
+ "If I’m getting it wrong, then tell me clearly.",
+ "That’s hard to hear, but I want you to be honest with me."
+ ];
+ } else {
+ replies = enforceReplies(category, parsed);
+ }
+
+ return res.json({ replies });
+
+ } catch (error) {
+ console.error("ERROR:", error);
+
+ // ALWAYS return valid replies (never error)
+ return res.json({
+ replies: [
+ "What do you mean by that?",
+ "If you feel that way, tell me what I’m missing.",
+ "I’m trying to understand you, but you need to talk to me directly.",
+ "If I’m getting it wrong, then tell me clearly.",
+ "That’s hard to hear, but I want you to be honest with me."
+ ]
+ });
+ }
+});
 
  const text = completion.choices?.[0]?.message?.content || "";
  const parsed = parseReplies(text);
