@@ -54,7 +54,8 @@ function parseReplies(text) {
 
 // THIS IS THE FIX — OUTSIDE FUNCTIONS
 function enforceReplies(category, replies) {
-let cleaned = replies.map((x) => clean(x)).filter(Boolean);
+const original = replies.map((x) => clean(x)).filter(Boolean);
+let cleaned = [...original];
 
 if (category === "family") {
 const bannedPhrases = [
@@ -69,35 +70,43 @@ const lower = reply.toLowerCase();
 return !bannedPhrases.some((phrase) => lower.includes(phrase));
 });
 
-return cleaned.slice(0, 5);
+// If filtering leaves too few replies, fall back to original replies
+if (cleaned.length < 3) {
+return original.slice(0, 5);
 }
 
 return cleaned.slice(0, 5);
+}
+
+return original.slice(0, 5);
 }
 
 function categoryRules(category) {
  switch (category) {
 
- case "family":
- return `
+case "family":
+return `
 FAMILY RULES:
-- Write the reply as something the user would actually text directly to their family member
-- Use first-person language like I, me, and my
-- Keep the tone calm, human, and emotionally real
-- The reply can show hurt, disappointment, or confusion when it fits
-- Do not make the reply cold or emotionally blank
-- Do not sound like a therapist or outside observer
-- Avoid generic filler phrases
-- Make the reply feel specific to the situation
-- Usually 1 to 2 sentences
-- If the message is hurtful, respond honestly without being aggressive
+- Write exactly what the user would text back
+- No therapy tone, no analysis, no emotional processing
+- No "that stings", "I feel", "I want to understand", etc
+- Do not sound like a counselor, coach, or mediator
+- Keep it natural, direct, and realistic
+- 1–2 sentences max
+- Slight emotion is OK (frustration, confusion), but keep it real
+- Be specific to what was said, not generic
 
-Examples:
-- That honestly hurts to hear, especially coming from you.
-- I’m not going to pretend that doesn’t affect me.
-- I wish we could talk about this more directly.
-- Hearing that like this is actually hard for me.
-- I get you’re frustrated, but that still doesn’t feel good to hear.
+STYLE:
+- Speak plainly, like a real conversation
+- It’s okay to question, push back, or be a little blunt
+- Don’t over-explain
+
+GOOD EXAMPLES:
+- What do you mean I don’t get you?
+- If something’s bothering you, just say it to me.
+- I’m trying, but I can’t fix what I don’t understand.
+- That’s not really fair.
+- If that’s how you feel, we should actually talk about it.
 `;
 
  default:
