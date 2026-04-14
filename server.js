@@ -282,10 +282,11 @@ const replies = enforceReplies(category, parsedReplies, message);
 
  return res.json({ replies });
  } catch (error) {
- console.error("Reply error:", error);
- return res.status(500).json({
- error: "Failed to generate replies"
- });
+ console.error("Reply error FULL:", error);
+
+return res.status(500).json({
+error: error.message || "Failed to generate replies"
+});
  }
 });
 
