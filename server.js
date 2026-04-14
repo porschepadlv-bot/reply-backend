@@ -273,7 +273,8 @@ Return ONLY a JSON array of 5 strings.
  });
 
  const text = completion.choices?.[0]?.message?.content || "";
- const replies = parseReplies(text);
+const parsedReplies = parseReplies(text);
+const replies = enforceReplies(category, parsedReplies, message);
 
  if (!replies.length) {
  return res.status(500).json({ error: "No replies generated" });
