@@ -323,6 +323,19 @@ DATING MODE:
 - Keep it realistic and textable
 - Most replies should be 1 to 2 sentences
 - Each set of 5 should feel meaningfully different
+- If the message is a simple greeting, casual opener, or light check-in such as "hey", "good morning", "happy monday", "how are you", or similar:
+- do NOT respond with suspicion, confusion, or intensity
+- do NOT ask "what do you mean"
+- do NOT sound overly flirty
+- generate easy, natural, friendly replies that keep the conversation moving
+- replies should feel relaxed, normal, and socially smooth
+
+
+For casual greetings, prefer:
+- warm acknowledgment
+- light reciprocity
+- easy follow-up question
+- playful but low-pressure tone
 `;
  case "work":
  return `
