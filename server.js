@@ -345,6 +345,12 @@ function fallbackReplies(category) {
  "If you think I'm missing something, then say it plainly.",
  "I hear what you're saying, but I need you to be specific.",
  "If you're frustrated with me, then be direct about it."
+ - Identify who is speaking based on the message
+- Always respond as the OTHER person receiving that message
+- If the message sounds like a parent speaking, respond as the child
+- If the message sounds like a child speaking, respond as the parent
+- Do NOT mirror the same authority tone unless it makes sense
+  - If a reply sounds like it could have been said by the same person who sent the original message, it is WRONG
  ];
  case "relationship":
  return [
@@ -450,6 +456,11 @@ GLOBAL RULES:
 - Avoid generic filler
 - Do not use quotation marks around replies unless naturally required
 - Each set of 5 should feel intentionally varied, not like rewrites of one idea
+- The input message is ALWAYS what the OTHER person said to the user
+- The replies MUST always be from the USER'S perspective responding back
+- NEVER repeat the same tone or direction as the input
+- NEVER sound like you are giving instructions to the user
+- If the input is a command, complaint, or criticism, the reply must respond to it — not restate it
 
 ${categoryRules(category, message)}
 
