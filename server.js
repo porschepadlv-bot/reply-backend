@@ -20,101 +20,45 @@ function clean(value) {
 
 function stripCodeFences(text) {
  return String(text || "")
- .replace(/```json/gi, "")
- .replace(/```/g, "")
+ .replace(/^```(?:json)?\s*/i, "")
+ .replace(/\s*```$/i, "")
  .trim();
 }
 
 function parseReplies(text) {
  const normalized = stripCodeFences(text);
 
- const cleanArray = (arr) =>
- arr
- .map((x) => clean(x))
- .map((x) => x.replace(/^"+|"+$/g, "").trim())
- .filter(Boolean);
-
  try {
  const parsed = JSON.parse(normalized);
 
  if (Array.isArray(parsed)) {
- return cleanArray(parsed);
+ return parsed.map((x) => clean(x)).filter(Boolean);
  }
 
  if (parsed && Array.isArray(parsed.replies)) {
- return cleanArray(parsed.replies);
- }
-
- if (typeof parsed === "string") {
- const nested = JSON.parse(parsed);
-
- if (Array.isArray(nested)) {
- return cleanArray(nested);
- }
-
- if (nested && Array.isArray(nested.replies)) {
- return cleanArray(nested.replies);
- }
+ return parsed.replies.map((x) => clean(x)).filter(Boolean);
  }
  } catch (_) {}
 
- const lines = normalized
+ return normalized
  .split("\n")
  .map((line) =>
  line
+ .replace(/^```(?:json)?/i, "")
  .replace(/^\s*[-*•\d.)]+\s*/, "")
- .replace(/^[\[\],"]+/, "")
  .replace(/^"+|"+$/g, "")
  .trim()
  )
  .filter(Boolean);
-
- if (lines.length === 1) {
- try {
- const nested = JSON.parse(lines[0]);
-
- if (Array.isArray(nested)) {
- return cleanArray(nested);
- }
-
- if (nested && Array.isArray(nested.replies)) {
- return cleanArray(nested.replies);
- }
- } catch (_) {}
- }
-
- return lines.filter((x) => x !== "[" && x !== "]");
 }
 
 function enforceReplies(category, replies) {
- const original = replies
+ const cleaned = replies
  .map((x) => clean(x))
- .map((x) => x.replace(/^"+|"+$/g, "").trim())
- .filter(Boolean);
+ .filter(Boolean)
+ .slice(0, 5);
 
- let cleaned = [...original];
-
- if (category === "family") {
- const bannedPhrases = [
- "no pressure",
- "take it slow",
- "no rush",
- "one step at a time"
- ];
-
- cleaned = cleaned.filter((reply) => {
- const lower = reply.toLowerCase();
- return !bannedPhrases.some((phrase) => lower.includes(phrase));
- });
-
- if (cleaned.length < 3) {
- return original.slice(0, 5);
- }
-
- return cleaned.slice(0, 5);
- }
-
- return original.slice(0, 5);
+ return cleaned;
 }
 
 function categoryRules(category) {
@@ -123,97 +67,24 @@ function categoryRules(category) {
  return `
 FAMILY:
 - Write only as a direct text message the user can send right now
-- The reply must be addressed directly to the other person
-- No therapist tone, no coaching, no advice
-- No analysis or emotional commentary
-- Keep it natural, direct, and realistic
-- Slight accountability is okay but do not over-apologize
-- Do not sound weak or overly soft
+- Address the other person directly (no "they", "my kids", etc.)
+- No therapy tone, no coaching, no advice
+- No emotional analysis or commentary
+- No explaining feelings like a narrator
+- Do not sound like a counselor or mediator
+- Keep it natural, grounded, and realistic
+- Slight accountability is OK but do NOT over-apologize
+- Do NOT sound weak, overly soft, or submissive
 - Keep replies 1–2 sentences
-- Ask for clarity in a direct way when needed
+- Favor clarity, calm pushback, or direct communication
+- Asking for clarification is GOOD when done directly
 
 GOOD STYLE:
 - If that's how you feel, then tell me what you mean.
-- Don't just say that and leave it there — tell me clearly.
-- If I'm missing something, say it directly.
-- I may not see it the same way, but I'm listening.
-- If you're frustrated, then be clear about it.
-`;
-
-GOOD STYLE:
-- If that's how you feel, then tell me what you mean.
-- Don't just say I don't get you and leave it there. Tell me what I'm missing.
-- If you think I'm not seeing something, then say it clearly.
-- I may not agree with everything, but I'm listening, so talk to me directly.
-- If you're frustrated with me, then be specific.
-- If I've missed something, then say it plainly instead of just throwing that at me.
-- That's not easy to hear, so tell me clearly what you mean.
-- If that's how you see it, then talk to me directly so I understand what you're saying.
-`;
-
-GOOD STYLE:
-- If that’s how you feel, then tell me what I’m missing instead of just leaving it there.
-- I’m trying to understand you, and if I’ve been getting it wrong, then tell me clearly.
-- I’m sorry if I haven’t been seeing it the way I should, but I want you to talk to me directly.
-- That’s hard to hear, but I’d rather you be honest with me and tell me what you mean.
-- If I’ve fallen short with you, then say that clearly so I can understand it better.
-- I may not have gotten everything right, but I do care, and I want you to tell me what feels missing.
-- Can you tell me what you mean by that? I want to understand where you're coming from.
-- If that's how you feel, then help me understand what got us here.
-- I'm sorry if I've been missing something, but I need you to be clear with me.
-- I hear what you're saying, and if I've fallen short, I want to understand how.
-- That’s hard to hear, but I’d rather talk about it clearly than leave it there.
-- If I’ve been getting it wrong, then tell me directly so I can understand it better.
-- I’m sorry if that’s how I’ve come across. Can you tell me what you mean?
-`;
-
- case "relationship":
- return `
-RELATIONSHIP:
-- Write only as a direct text message the user can send right now
-- Keep it natural, grounded, and sendable
-- No therapist tone
-- No advice
-- No analysis
-- No outside-observer framing
-- Accountability is good when it fits
-- Clarity is more important than sounding polished
-- Avoid generic filler
-`;
-
- case "friendship":
- return `
-FRIENDSHIP:
-- Write only as a direct text message the user can send right now
-- Keep it natural, direct, and realistic
-- No therapist tone
-- No advice
-- No analysis
-- No outside-observer framing
-- Prefer honest, calm, textable replies
-`;
-
- case "dating":
- return `
-DATING:
-- Write only as a direct text message the user can send right now
-- Keep it natural, attractive, casual, and easy to reply to
-- No therapist tone
-- No advice
-- No analysis
-- Do not sound cheesy, thirsty, robotic, or performative
-- Keep it socially aware and realistic
-`;
-
- case "work":
- return `
-WORK:
-- Write only as a direct text message or workplace message the user can send right now
-- Keep it professional, respectful, and work-focused
-- No therapist tone
-- No advice
-- No analysis
-- Never encourage personal or romantic escalation
+- Don't just say that — explain it.
+- If I'm missing something, say it clearly.
+- I hear you, but be specific about what you mean.
+- If you feel that way, then talk to me directly.
 `;
 
  default:
@@ -235,37 +106,38 @@ app.post("/reply", async (req, res) => {
  const message = clean(req.body?.message);
 
  if (!message) {
- return res.status(400).json({ error: "Missing message" });
+ return res.json({
+ replies: [
+ "What do you mean by that?",
+ "If you feel that way, explain it to me.",
+ "Say it clearly so I understand.",
+ "Don't just leave it like that — explain.",
+ "If I'm missing something, tell me directly."
+ ]
+ });
  }
 
  const completion = await openai.chat.completions.create({
  model: MODEL,
- temperature: 0.9,
+ temperature: 0.7,
  messages: [
  {
  role: "system",
  content: `
-Return ONLY a plain JSON array of EXACTLY 5 strings.
-Do NOT include markdown.
-Do NOT include \`\`\`json.
-Do NOT include explanation.
-Do NOT return an object.
-Example format:
-["Reply one","Reply two","Reply three","Reply four","Reply five"]
+Return ONLY a JSON array of 5 replies.
 
 GLOBAL RULES:
-- Every reply must be a message the user can copy and send immediately
-- Never write as a coach, therapist, counselor, mediator, or outside observer
-- No advice tone
-- No emotional commentary from the outside
+- Each reply must be something the user can send immediately
+- No therapist tone
+- No coaching tone
+- No advice
 - No analysis
-- No journaling
-- No reflection about the situation
-- No quotation marks around replies unless they are naturally part of the message
-- Use plain, natural, everyday text-message language
-- Keep replies specific to the message, not generic filler
-- Replies should feel human, emotionally real, and worth sending
-- When appropriate, prefer replies that invite clarification and understanding instead of sounding purely defensive
+- No explanations about the situation
+- No narration
+- No emotional commentary
+- No quotation marks
+- No JSON wrappers like { "replies": ... }
+- Output ONLY raw JSON array
 
 ${categoryRules(category)}
 `.trim()
@@ -277,43 +149,40 @@ ${categoryRules(category)}
  ]
  });
 
- let text = completion.choices?.[0]?.message?.content || "";
-
- text = text
- .replace(/```json/gi, "")
- .replace(/```/g, "")
- .trim();
-
- let replies;
+ const text = completion.choices?.[0]?.message?.content || "";
  const parsed = parseReplies(text);
 
+ let replies;
+
  if (!parsed || parsed.length === 0) {
- replies = [];
+ replies = [
+ "What do you mean by that?",
+ "If that's how you feel, explain it to me.",
+ "Say it clearly so I understand.",
+ "Don't just leave it like that — explain.",
+ "If I'm missing something, tell me directly."
+ ];
  } else {
  replies = enforceReplies(category, parsed);
  }
 
- replies = replies
- .map((r) => clean(r))
- .map((r) => r.replace(/^"+|"+$/g, "").trim())
- .filter((r) => r && r !== "[" && r !== "]")
- .slice(0, 5);
-
  return res.json({ replies });
+
  } catch (error) {
  console.error("ERROR:", error);
- return res.status(500).json({ error: "Server failed" });
+
+ return res.json({
+ replies: [
+ "What do you mean by that?",
+ "If that's how you feel, explain it to me.",
+ "Say it clearly so I understand.",
+ "Don't just leave it like that — explain.",
+ "If I'm missing something, tell me directly."
+ ]
+ });
  }
 });
 
 app.listen(PORT, () => {
  console.log(`Server running on port ${PORT}`);
-});
-
-process.on("uncaughtException", (err) => {
- console.error("UNCAUGHT:", err);
-});
-
-process.on("unhandledRejection", (err) => {
- console.error("UNHANDLED:", err);
 });
