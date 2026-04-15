@@ -141,20 +141,25 @@ FAMILY:
 - No advice
 - Do not sound cold, detached, passive, emotionally blank, or overly polite
 - Do not make the user sound like they do not care
-- Do not write short shut-down replies like "Understood", "Noted", "Alright", or "I see where you stand"
+- The best replies should often do one or both of these:
+1. ask for clarification in a calm, direct way
+2. show slight accountability or apology when that fits
+- When the other person is critical, disappointed, or rejecting, prefer replies that sound open, honest, and willing to understand instead of just defensive
+- Slightly apologetic is good when appropriate, but do not overdo it
+- Do not sound desperate, weak, or begging
 - Most replies should be 1 to 2 full sentences
-- Let the reply show some emotional reality when appropriate: hurt, disappointment, confusion, frustration, or honesty
 - Keep it natural, direct, human, and sendable
 - Make the reply specific to what was said
 
 GOOD STYLE:
-- That’s hard to hear, especially said that way.
-- I’m not going to pretend that doesn’t hurt.
-- If that’s really how you feel, then say it clearly, but that still lands hard.
-- I hear what you’re saying, but that doesn’t make it any easier to hear.
-- If you wanted distance, you could’ve said it without making it feel this harsh.
+- Can you tell me what you mean by that? I want to understand where you're coming from.
+- If that's how you feel, then help me understand what got us here.
+- I'm sorry if I've been missing something, but I need you to be clear with me.
+- I hear what you're saying, and if I've fallen short, I want to understand how.
+- That’s hard to hear, but I’d rather talk about it clearly than leave it there.
+- If I’ve been getting it wrong, then tell me directly so I can understand it better.
+- I’m sorry if that’s how I’ve come across. Can you tell me what you mean?
 `;
-
  case "work":
  return `
 WORK:
