@@ -52,54 +52,89 @@ function parseReplies(text) {
  .filter(Boolean);
 }
 
-function enforceReplies(category, replies) {
- const original = replies.map((x) => clean(x)).filter(Boolean);
- let cleaned = [...original];
+// remove duplicates
+function uniqueReplies(replies) {
+ const seen = new Set();
+ const result = [];
 
- if (category === "family") {
- const bannedPhrases = [
- "no pressure",
- "take it slow",
- "no rush",
- "one step at a time"
- ];
+ for (const r of replies) {
+ const reply = clean(r);
+ if (!reply) continue;
 
- cleaned = cleaned.filter((reply) => {
- const lower = reply.toLowerCase();
- return !bannedPhrases.some((phrase) => lower.includes(phrase));
- });
+ const key = reply.toLowerCase();
+ if (seen.has(key)) continue;
 
- if (cleaned.length < 3) {
- return original.slice(0, 5);
+ seen.add(key);
+ result.push(reply);
  }
 
- return cleaned.slice(0, 5);
- }
-
- return original.slice(0, 5);
+ return result;
 }
 
+// category-specific cleanup
+function filterReplies(category, replies) {
+ let cleaned = uniqueReplies(replies);
+
+ if (category === "family") {
+ const banned = ["no pressure", "take it slow", "no rush", "one step at a time"];
+
+ cleaned = cleaned.filter(r => {
+ const lower = r.toLowerCase();
+ return !banned.some(p => lower.includes(p));
+ });
+ }
+
+ return cleaned;
+}
+
+// category rules (THIS FIXES GENERIC + THERAPY ISSUE)
 function categoryRules(category) {
  switch (category) {
+
+ case "dating":
+ return `
+DATING:
+- Sound natural and human
+- Slight curiosity is good
+- Not flirty, not thirsty
+- Not robotic
+- No therapy tone
+- Keep it easy to reply to
+`;
+
+ case "relationship":
+ return `
+RELATIONSHIP:
+- Direct, accountable, real
+- No therapy tone
+- No analysis
+- Sound like a real partner texting
+`;
+
+ case "friendship":
+ return `
+FRIENDSHIP:
+- Casual, honest, natural
+- No therapy tone
+- No analysis
+`;
+
  case "family":
  return `
-FAMILY RULES:
-- Write only as a direct text message the user can send to their family member right now
-- The reply must be addressed directly to the other person involved
-- Do not write about them like an outside observer
-- Do not use third-person phrasing like "they", "them", "my kids", "my mom", or "my dad" unless absolutely necessary
-- Do not write commentary, reflection, analysis, journaling, or advice
-- No therapy tone, no counseling tone, no emotional processing language
-- Keep it natural, direct, realistic, and sendable
-- Usually 1 to 2 sentences
-- Make the reply specific to what was said
+FAMILY:
+- Direct message only
+- No therapy tone
+- No analysis
+- No third-person talking
+`;
 
-GOOD STYLE:
-- What do you mean by that?
-- If you feel that way, tell me what I’m missing.
-- I’m trying to understand you, but you need to talk to me directly.
-- That’s hard to hear, but I want you to be honest with me.
-- If I’m missing something, then tell me clearly.
+ case "work":
+ return `
+WORK:
+- Professional, neutral
+- No personal tone
+- No flirting
+- No therapy tone
 `;
 
  default:
@@ -107,54 +142,37 @@ GOOD STYLE:
  }
 }
 
-app.get("/", (_req, res) => {
- res.send("AI Reply Server Running V1002");
-});
+// MAIN AI GENERATION (RETRY + VARIETY)
+async function generateReplies({ category, message, previousReplies }) {
 
-app.get("/health", (_req, res) => {
- res.json({ ok: true, model: MODEL });
-});
+ let best = [];
 
-app.post("/reply", async (req, res) => {
- try {
- const category = clean(req.body?.category).toLowerCase();
- const message = clean(req.body?.message);
-
- if (!message) {
- return res.json({
- replies: [
- "What do you mean by that?",
- "If you feel that way, tell me what I’m missing.",
- "I’m trying to understand you, but you need to talk to me directly.",
- "If I’m getting it wrong, then tell me clearly.",
- "That’s hard to hear, but I want you to be honest with me."
- ]
- });
- }
+ for (let attempt = 0; attempt < 3; attempt++) {
 
  const completion = await openai.chat.completions.create({
  model: MODEL,
- temperature: 0.7,
+ temperature: 0.85 + (attempt * 0.1),
+
  messages: [
  {
  role: "system",
  content: `
-Return ONLY a JSON array of 5 replies.
+Return ONLY a JSON array of EXACTLY 5 replies.
 
-GLOBAL RULES:
-- Every reply must be a message the user can copy and send immediately
-- Never write as a coach, therapist, counselor, mediator, or outside observer
-- No advice tone
-- No emotional commentary from the outside
+RULES:
+- Direct text messages only
+- No advice
+- No therapy tone
 - No analysis
-- No journaling
-- No reflection about the situation
-- No quotation marks around replies
-- Use plain, natural, everyday text-message language
-- Keep replies specific to the message, not generic filler
+- No quotes
+- Make each reply DIFFERENT
+- Avoid repeating wording
+- Avoid these previous replies:
+
+${previousReplies.map(r => `- ${r}`).join("\n") || "- none"}
 
 ${categoryRules(category)}
-`.trim()
+`
  },
  {
  role: "user",
@@ -166,33 +184,49 @@ ${categoryRules(category)}
  const text = completion.choices?.[0]?.message?.content || "";
  const parsed = parseReplies(text);
 
- let replies;
+ const filtered = filterReplies(category, parsed)
+ .filter(r => !previousReplies.some(p => p.toLowerCase() === r.toLowerCase()));
 
- if (!parsed || parsed.length === 0) {
- replies = [
- "What do you mean by that?",
- "If you feel that way, tell me what I’m missing.",
- "I’m trying to understand you, but you need to talk to me directly.",
- "If I’m getting it wrong, then tell me clearly.",
- "That’s hard to hear, but I want you to be honest with me."
- ];
- } else {
- replies = enforceReplies(category, parsed);
+ if (filtered.length > best.length) {
+ best = filtered;
  }
 
- return res.json({ replies });
- } catch (error) {
- console.error("ERROR:", error);
+ if (filtered.length >= 5) {
+ return filtered.slice(0, 5);
+ }
+ }
 
- return res.json({
- replies: [
- "What do you mean by that?",
- "If you feel that way, tell me what I’m missing.",
- "I’m trying to understand you, but you need to talk to me directly.",
- "If I’m getting it wrong, then tell me clearly.",
- "That’s hard to hear, but I want you to be honest with me."
- ]
+ throw new Error("AI failed to generate enough replies");
+}
+
+app.get("/", (_req, res) => {
+ res.send("AI Reply Server V1003 CLEAN");
+});
+
+app.post("/reply", async (req, res) => {
+ try {
+
+ const category = clean(req.body?.category).toLowerCase();
+ const message = clean(req.body?.message);
+ const previousReplies = Array.isArray(req.body?.previousReplies)
+ ? req.body.previousReplies.map(clean)
+ : [];
+
+ if (!message) {
+ return res.status(400).json({ error: "Missing message" });
+ }
+
+ const replies = await generateReplies({
+ category,
+ message,
+ previousReplies
  });
+
+ return res.json({ replies });
+
+ } catch (err) {
+ console.error(err);
+ return res.status(500).json({ error: "AI failed" });
  }
 });
 
