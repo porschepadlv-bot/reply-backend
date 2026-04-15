@@ -719,15 +719,17 @@ Generate 5 different reply options now.
 
  if (replies.length < 5) {
  const fallback = getCategoryFallbackReplies(category, submode);
- replies = postProcessReplies(
+ const extra = postProcessReplies(
  category,
  submode,
- [...replies, ...fallback],
- previousReplies
+ fallback,
+ [...previousReplies, ...replies]
  );
+
+ replies = [...replies, ...extra].slice(0, 5);
  }
 
- if (replies.length < 5) {
+ if (replies.length === 0) {
  replies = getCategoryFallbackReplies(category, submode);
  }
 
