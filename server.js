@@ -215,7 +215,10 @@ function categoryRules(category, message) {
 FAMILY MODE:
 - Write only as a direct text message the user can send right now
 - The reply must be addressed directly to the family member
-- Do NOT refer to the family member in third person like "they", "them", "my kids", "my mom", or "my dad"
+- The reply MUST be written directly to the other person as if texting them
+- NEVER refer to them as "she", "he", "they", "her", "him", or by role like "my sister", "my mom", etc.
+- ALWAYS speak directly using "you"
+- If the reply sounds like it’s describing them instead of talking to them, it is WRONG
 - Do NOT ask the user questions
 - Do NOT sound like a therapist, coach, counselor, mediator, or outside observer
 - No advice
