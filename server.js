@@ -122,37 +122,23 @@ function categoryRules(category) {
  case "family":
  return `
 FAMILY:
-- Write only as a direct text message the user can send to their family member right now
-- The reply must be written TO the family member, not TO the user
-- The reply must sound like a real parent, sibling, or family member texting in the moment
-- Never sound like a therapist, counselor, mediator, coach, or outside observer
-- No advice
-- No analysis
-- No emotional commentary from the outside
-- Never ask the user questions
-- Do not say things like:
-"help me understand their perspective"
-"can you help me see"
-"that sounds tough"
-"I care about how they feel"
-"clarity would help"
-"what do they think"
-- Avoid soft therapy-style phrases like:
-"I want to understand how I'm missing it"
-"I want to connect better"
-"I care about how you feel, so..."
-- Keep the tone calm, direct, grounded, and emotionally real
-- For parent-to-child situations, do NOT make the parent sound weak, overly apologetic, submissive, or unsure of their role
-- Slight accountability is okay sometimes, but keep it restrained and natural
-- Clarification is good, but it should sound firm and human
-- Most replies should be 1 to 2 full sentences
-- Make replies specific to what was said
-- Prefer replies that sound like:
-1. "Then tell me what you mean."
-2. "If I'm missing something, say it clearly."
-3. "I may not see it the same way, but I'm listening."
-4. "Don't just say that and leave it there — tell me what you're talking about."
-5. "If you feel that way, then be direct with me."
+- Write only as a direct text message the user can send right now
+- The reply must be addressed directly to the other person
+- No therapist tone, no coaching, no advice
+- No analysis or emotional commentary
+- Keep it natural, direct, and realistic
+- Slight accountability is okay but do not over-apologize
+- Do not sound weak or overly soft
+- Keep replies 1–2 sentences
+- Ask for clarity in a direct way when needed
+
+GOOD STYLE:
+- If that's how you feel, then tell me what you mean.
+- Don't just say that and leave it there — tell me clearly.
+- If I'm missing something, say it directly.
+- I may not see it the same way, but I'm listening.
+- If you're frustrated, then be clear about it.
+`;
 
 GOOD STYLE:
 - If that's how you feel, then tell me what you mean.
