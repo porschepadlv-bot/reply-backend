@@ -52,13 +52,12 @@ function parseReplies(text) {
  .filter(Boolean);
 }
 
-// remove duplicates
 function uniqueReplies(replies) {
  const seen = new Set();
  const result = [];
 
- for (const r of replies) {
- const reply = clean(r);
+ for (const raw of replies) {
+ const reply = clean(raw);
  if (!reply) continue;
 
  const key = reply.toLowerCase();
@@ -71,108 +70,165 @@ function uniqueReplies(replies) {
  return result;
 }
 
-// category-specific cleanup
 function filterReplies(category, replies) {
  let cleaned = uniqueReplies(replies);
 
  if (category === "family") {
- const banned = ["no pressure", "take it slow", "no rush", "one step at a time"];
+ const banned = [
+ "no pressure",
+ "take it slow",
+ "no rush",
+ "one step at a time"
+ ];
 
- cleaned = cleaned.filter(r => {
- const lower = r.toLowerCase();
- return !banned.some(p => lower.includes(p));
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !banned.some((phrase) => lower.includes(phrase));
  });
  }
 
  return cleaned;
 }
 
-// category rules (THIS FIXES GENERIC + THERAPY ISSUE)
 function categoryRules(category) {
  switch (category) {
-
  case "dating":
  return `
 DATING:
-- Sound natural and human
-- Slight curiosity is good
-- Not flirty, not thirsty
-- Not robotic
+- Write only as a direct text the user can send back right now
+- Keep replies natural, casual, easy to answer, and human
+- Show interest without sounding flirty, thirsty, overly smooth, or suggestive
+- Do not escalate too quickly
+- Do not suggest hanging out, meeting up, coming over, or doing an activity unless the other person's message clearly invites that
 - No therapy tone
-- Keep it easy to reply to
+- No analysis
+- No cheesy lines
+- Usually 1 to 2 sentences
 `;
 
  case "relationship":
  return `
 RELATIONSHIP:
-- Direct, accountable, real
+- Write only as a direct text the user can send to their partner
+- Be clear, accountable, emotionally real, and human
 - No therapy tone
-- No analysis
-- Sound like a real partner texting
+- No counseling language
+- No vague reflection
+- No mixed signals
+- Usually 1 to 2 sentences
 `;
 
  case "friendship":
  return `
 FRIENDSHIP:
-- Casual, honest, natural
+- Write only as a direct text the user can send to their friend
+- Keep it natural, balanced, direct, and realistic
 - No therapy tone
-- No analysis
+- No emotional analysis
+- No commentary from the outside
+- Usually 1 to 2 sentences
 `;
 
  case "family":
  return `
 FAMILY:
-- Direct message only
+- Write only as a direct text message the user can send right now
+- The reply must be addressed directly to the other person involved
+- Do not write like an outside observer
 - No therapy tone
+- No counseling language
 - No analysis
-- No third-person talking
+- No advice
+- Do not sound cold, detached, passive, emotionally blank, or overly polite
+- Do not make the user sound like they do not care
+- Do not write short shut-down replies like "Understood", "Noted", "Alright", or "I see where you stand"
+- Most replies should be 1 to 2 full sentences
+- Let the reply show some emotional reality when appropriate: hurt, disappointment, confusion, frustration, or honesty
+- Keep it natural, direct, human, and sendable
+- Make the reply specific to what was said
+
+GOOD STYLE:
+- That’s hard to hear, especially said that way.
+- I’m not going to pretend that doesn’t hurt.
+- If that’s really how you feel, then say it clearly, but that still lands hard.
+- I hear what you’re saying, but that doesn’t make it any easier to hear.
+- If you wanted distance, you could’ve said it without making it feel this harsh.
 `;
 
  case "work":
  return `
 WORK:
-- Professional, neutral
-- No personal tone
-- No flirting
+- Write only as a direct message the user can send in a work context
+- Keep replies professional, respectful, neutral, and human
+- Never sound romantic, personal, playful, or flirty
+- If the message crosses professional boundaries, politely keep it work-focused
 - No therapy tone
+- No analysis
+- Usually 1 to 2 sentences
 `;
 
  default:
- return "";
+ return `
+GENERAL RULES:
+- Write only as a direct sendable text message
+- No therapy tone
+- No advice tone
+- No analysis
+- No emotional commentary from the outside
+- Usually 1 to 2 sentences
+`;
  }
 }
 
-// MAIN AI GENERATION (RETRY + VARIETY)
-async function generateReplies({ category, message, previousReplies }) {
+function buildSystemPrompt({ category, context, previousReplies }) {
+ const avoidBlock = previousReplies.length
+ ? previousReplies.map((x) => `- ${x}`).join("\n")
+ : "- none";
 
- let best = [];
+ const contextBlock = context
+ ? `ADDITIONAL CONTEXT:\n${context}\n`
+ : "";
 
- for (let attempt = 0; attempt < 3; attempt++) {
+ return `
+Return ONLY a JSON array of EXACTLY 5 replies.
 
+GLOBAL RULES:
+- Every reply must be a message the user can copy and send immediately
+- Never write as a coach, therapist, counselor, mediator, or outside observer
+- No advice tone
+- No emotional commentary from the outside
+- No analysis
+- No journaling
+- No reflection about the situation
+- No quotation marks around replies
+- Use plain, natural, everyday text-message language
+- Keep replies specific to the message, not generic filler
+- Every reply should be meaningfully different from the others
+- Do not repeat wording
+- If you are about to generate a reply similar to an avoided reply, generate a different one instead
+- You MUST return exactly 5 replies
+- Do not make replies too short, emotionally flat, or dismissive
+- Most replies should be 1 to 2 full sentences
+- Replies should feel human, emotionally real, and worth sending
+
+${categoryRules(category)}
+
+${contextBlock}REPLIES TO AVOID:
+${avoidBlock}
+`.trim();
+}
+
+async function generateReplies({ category, context, message, previousReplies }) {
+ let bestReplies = [];
+
+ for (let attempt = 0; attempt < 3; attempt += 1) {
  const completion = await openai.chat.completions.create({
  model: MODEL,
- temperature: 0.85 + (attempt * 0.1),
-
+ temperature: 0.95 + (attempt * 0.1),
  messages: [
  {
  role: "system",
- content: `
-Return ONLY a JSON array of EXACTLY 5 replies.
-
-RULES:
-- Direct text messages only
-- No advice
-- No therapy tone
-- No analysis
-- No quotes
-- Make each reply DIFFERENT
-- Avoid repeating wording
-- Avoid these previous replies:
-
-${previousReplies.map(r => `- ${r}`).join("\n") || "- none"}
-
-${categoryRules(category)}
-`
+ content: buildSystemPrompt({ category, context, previousReplies })
  },
  {
  role: "user",
@@ -183,12 +239,12 @@ ${categoryRules(category)}
 
  const text = completion.choices?.[0]?.message?.content || "";
  const parsed = parseReplies(text);
+ const filtered = filterReplies(category, parsed).filter(
+ (reply) => !previousReplies.some((prev) => prev.toLowerCase() === reply.toLowerCase())
+ );
 
- const filtered = filterReplies(category, parsed)
- .filter(r => !previousReplies.some(p => p.toLowerCase() === r.toLowerCase()));
-
- if (filtered.length > best.length) {
- best = filtered;
+ if (filtered.length > bestReplies.length) {
+ bestReplies = filtered;
  }
 
  if (filtered.length >= 5) {
@@ -196,20 +252,24 @@ ${categoryRules(category)}
  }
  }
 
- throw new Error("AI failed to generate enough replies");
+ throw new Error(`Could not generate 5 valid replies. Best count: ${bestReplies.length}`);
 }
 
 app.get("/", (_req, res) => {
- res.send("AI Reply Server V1003 CLEAN");
+ res.send("AI Reply Server V1004 HUMAN");
+});
+
+app.get("/health", (_req, res) => {
+ res.json({ ok: true, model: MODEL });
 });
 
 app.post("/reply", async (req, res) => {
  try {
-
  const category = clean(req.body?.category).toLowerCase();
  const message = clean(req.body?.message);
+ const context = clean(req.body?.context);
  const previousReplies = Array.isArray(req.body?.previousReplies)
- ? req.body.previousReplies.map(clean)
+ ? uniqueReplies(req.body.previousReplies.map((x) => clean(x))).slice(0, 20)
  : [];
 
  if (!message) {
@@ -218,15 +278,17 @@ app.post("/reply", async (req, res) => {
 
  const replies = await generateReplies({
  category,
+ context,
  message,
  previousReplies
  });
 
  return res.json({ replies });
-
- } catch (err) {
- console.error(err);
- return res.status(500).json({ error: "AI failed" });
+ } catch (error) {
+ console.error("ERROR:", error);
+ return res.status(502).json({
+ error: "Failed to generate replies"
+ });
  }
 });
 
