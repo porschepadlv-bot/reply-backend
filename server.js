@@ -80,20 +80,22 @@ function parseReplies(text) {
  }
  } catch (_) {}
 
- const lines = normalized
+ return dedupeReplies(
+ normalized
  .split("\n")
  .map((line) =>
  line
  .replace(/^```(?:json)?/i, "")
  .replace(/^\s*[-*•\d.)]+\s*/, "")
  .trim()
+ )
  );
-
- return dedupeReplies(lines);
 }
 
 function removeNearDuplicates(replies, previousReplies = []) {
- const prior = new Set(previousReplies.map((x) => normalizeReply(x).toLowerCase()));
+ const prior = new Set(
+ previousReplies.map((x) => normalizeReply(x).toLowerCase())
+ );
  const usedStarts = new Set();
  const finalReplies = [];
 
@@ -113,35 +115,58 @@ function removeNearDuplicates(replies, previousReplies = []) {
  return finalReplies;
 }
 
+function detectFamilySubmode(message) {
+ const lower = message.toLowerCase();
+
+ const highConflictTriggers = [
+ "i don't want to come home anymore",
+ "i dont want to come home anymore",
+ "i'm done explaining myself",
+ "im done explaining myself",
+ "you don't understand anything",
+ "you dont understand anything",
+ "you act like i'm a problem",
+ "you act like im a problem",
+ "i don't trust you anymore",
+ "i dont trust you anymore",
+ "leave me alone",
+ "you embarrassed me",
+ "you never listen to me",
+ "you don't respect me",
+ "you dont respect me"
+ ];
+
+ if (highConflictTriggers.some((p) => lower.includes(p))) {
+ return "high_conflict";
+ }
+
+ return "standard";
+}
+
 function enforceReplies(category, replies, previousReplies = []) {
  let cleaned = dedupeReplies(replies);
 
  const bannedGlobalPhrases = [
- "that sounds tough",
- "have you tried",
- "maybe you could",
- "it can be tough",
- "i totally understand",
- "i know how that feels",
- "communication can be tricky",
- "help you understand their perspective",
- "see their perspective",
- "connect better with them",
- "it sounds like you're feeling",
- "it sounds like you’re feeling",
- "you're feeling really",
- "you’re feeling really",
- "you are feeling really",
  "it sounds like",
+ "you’re feeling",
+ "you're feeling",
+ "you are feeling",
  "you must be feeling",
  "that must feel",
- "you’re allowed to feel",
  "your feelings are valid",
  "i want to validate",
+ "have you tried",
+ "maybe you could",
+ "communication can be tricky",
+ "i totally understand",
+ "i know how that feels",
  "i can understand you're feeling",
  "i can understand you’re feeling",
  "i understand you're feeling",
- "i understand you’re feeling"
+ "i understand you’re feeling",
+ "help me understand their perspective",
+ "their perspective",
+ "see their perspective"
  ];
 
  cleaned = cleaned.filter((reply) => {
@@ -151,48 +176,23 @@ function enforceReplies(category, replies, previousReplies = []) {
 
  if (category === "family") {
  const bannedFamilyPhrases = [
- "help me see their perspective",
- "how they feel",
- "i care about how they feel",
- "can you help me",
- "what do they think",
- "their perspective",
- "that sounds tough",
- "have you tried",
- "maybe you could",
- "connect better",
- "i want to connect",
- "open conversation could help",
- "it can be tough to feel",
- "communication can be tricky",
  "i'm sorry to hear that",
  "i’m sorry to hear that",
- "what they feel",
- "what do they mean by that?",
- "can you give me an example?",
- "it sounds like you're feeling",
- "it sounds like you’re feeling",
- "you're feeling really",
- "you’re feeling really",
- "you are feeling really",
- "it sounds like",
- "you must feel",
- "you must be feeling",
- "that must feel",
- "really alone in this",
- "fully aware",
+ "help me see",
+ "connect better",
+ "let's focus on",
+ "let’s focus on",
  "what you need me to understand right now",
  "i can see how i may not have been",
- "let’s focus on what you need me to understand",
- "let's focus on what you need me to understand",
- "i can understand you're feeling",
- "i can understand you’re feeling",
- "i understand you're feeling",
- "i understand you’re feeling",
- "i know you're overwhelmed",
- "i know you’re overwhelmed",
- "you’re feeling overwhelmed",
- "you're feeling overwhelmed"
+ "fully aware",
+ "really alone in this",
+ "how you’re feeling",
+ "how you're feeling",
+ "how they feel",
+ "i care about how you feel",
+ "i care about how they feel",
+ "you need a safe space",
+ "open conversation could help"
  ];
 
  cleaned = cleaned.filter((reply) => {
@@ -206,11 +206,13 @@ function enforceReplies(category, replies, previousReplies = []) {
  return cleaned.slice(0, 5);
 }
 
-function categoryRules(category) {
+function categoryRules(category, message) {
+ const familySubmode = detectFamilySubmode(message);
+
  switch (category) {
  case "family":
  return `
-FAMILY:
+FAMILY MODE:
 - Write only as a direct text message the user can send right now
 - The reply must be addressed directly to the family member
 - Do NOT refer to the family member in third person like "they", "them", "my kids", "my mom", or "my dad"
@@ -223,11 +225,9 @@ FAMILY:
  "it sounds like you're feeling..."
  "you must be feeling..."
  "that must feel..."
- "i can see how you may feel..."
+ "i can see how..."
  "let's focus on..."
  "help me understand your perspective"
- "i can understand you're feeling..."
- "i understand you're feeling..."
 - For parent-to-child situations, do NOT make the parent sound weak, submissive, overly apologetic, or unsure of their role
 - Slight accountability is okay when appropriate, but keep it restrained
 - Clarification is good, but it must sound direct and natural
@@ -244,22 +244,40 @@ FAMILY:
 - Do NOT make every reply apologetic
 - Keep parental authority calm, not harsh
 
+${
+ familySubmode === "high_conflict"
+ ? `
+HIGH CONFLICT FAMILY SUBMODE:
+- The other person's message is harsher or more loaded
+- Replies should still de-escalate, but they should be firmer and less soft
+- Avoid sounding passive
+- Avoid sounding needy
+- Clarification should sound direct
+- Emotional honesty should be brief and grounded
+- Repair-oriented reply should still keep dignity and calm authority
+`
+ : `
+STANDARD FAMILY SUBMODE:
+- Keep replies calm, clear, and open
+- Slight warmth is okay as long as it does not become therapy-like
+`
+}
+
 GOOD STYLE:
 - If that's how you feel, then tell me what you mean.
-- Don't just say I don't get you and leave it there. Tell me what you're talking about.
+- Don't just say that and leave it there. Tell me what you're talking about.
 - If you think I'm missing something, then say it clearly.
-- I may not see it the same way, but I'm listening, so be direct with me.
-- If you're frustrated with me, then say what you mean plainly.
+- I hear what you're saying, but I need you to be specific.
+- If you're frustrated with me, then say it plainly.
 - If I've missed something, then spell it out instead of just throwing that at me.
 - That's not easy to hear, so tell me clearly what you mean.
 - If that's how you see it, then talk to me directly.
 - If I'm getting it wrong, then say exactly where.
-- I hear what you're saying, but I need you to be specific.
+- If something I've done is landing badly, then say that clearly.
 `;
-
  case "relationship":
  return `
-RELATIONSHIP:
+RELATIONSHIP MODE:
 - Write only as a direct text message the user can send right now
 - Keep it natural, direct, emotionally real, and sendable
 - No therapy tone
@@ -271,10 +289,9 @@ RELATIONSHIP:
 - Most replies should be 1 to 2 sentences
 - Each set of 5 should feel meaningfully different
 `;
-
  case "friendship":
  return `
-FRIENDSHIP:
+FRIENDSHIP MODE:
 - Write only as a direct text message the user can send right now
 - Keep it natural, direct, realistic, and socially normal
 - No therapy tone
@@ -284,10 +301,9 @@ FRIENDSHIP:
 - Most replies should be 1 to 2 sentences
 - Each set of 5 should feel meaningfully different
 `;
-
  case "dating":
  return `
-DATING:
+DATING MODE:
 - Write only as a direct text message the user can send right now
 - Keep it natural, attractive, casual, socially aware, and easy to reply to
 - No therapist tone
@@ -299,10 +315,9 @@ DATING:
 - Most replies should be 1 to 2 sentences
 - Each set of 5 should feel meaningfully different
 `;
-
  case "work":
  return `
-WORK:
+WORK MODE:
 - Write only as a direct message the user can send right now
 - Keep it professional, respectful, neutral, and work-focused
 - No therapist tone
@@ -313,7 +328,6 @@ WORK:
 - Most replies should be 1 to 2 sentences
 - Each set of 5 should feel meaningfully different
 `;
-
  default:
  return "";
  }
@@ -329,7 +343,6 @@ function fallbackReplies(category) {
  "I hear what you're saying, but I need you to be specific.",
  "If you're frustrated with me, then be direct about it."
  ];
-
  case "relationship":
  return [
  "I hear what you're saying, and I need to take that seriously.",
@@ -338,7 +351,6 @@ function fallbackReplies(category) {
  "I understand why you're upset, and I need to own my part in it.",
  "I hear you, and I know I need to show up better."
  ];
-
  case "friendship":
  return [
  "If something's off, just say it directly.",
@@ -347,7 +359,6 @@ function fallbackReplies(category) {
  "If we're going to fix it, then let's actually talk about it.",
  "Say what you mean directly so we can deal with it."
  ];
-
  case "dating":
  return [
  "What did you mean by that?",
@@ -356,7 +367,6 @@ function fallbackReplies(category) {
  "I’m not totally sure how to read that yet.",
  "Alright, I'm listening."
  ];
-
  case "work":
  return [
  "Thanks for reaching out. I’d prefer to keep this work-focused.",
@@ -365,7 +375,6 @@ function fallbackReplies(category) {
  "I’d prefer to keep our communication professional.",
  "Thanks, but I’d rather keep this focused on work."
  ];
-
  default:
  return [
  "What do you mean by that?",
@@ -378,7 +387,7 @@ function fallbackReplies(category) {
 }
 
 app.get("/", (_req, res) => {
- res.send("AI Reply Server Running V1007");
+ res.send("AI Reply Server V1008");
 });
 
 app.get("/health", (_req, res) => {
@@ -437,8 +446,9 @@ GLOBAL RULES:
 - Keep replies natural, direct, realistic, and sendable
 - Avoid generic filler
 - Do not use quotation marks around replies unless naturally required
+- Each set of 5 should feel intentionally varied, not like rewrites of one idea
 
-${categoryRules(category)}
+${categoryRules(category, message)}
 
 ${previousSection}
 `.trim()
@@ -461,7 +471,10 @@ Generate 5 different reply options now.
 
  if (!replies || replies.length < 5) {
  const fallback = fallbackReplies(category);
- const merged = removeNearDuplicates([...replies, ...fallback], previousReplies);
+ const merged = removeNearDuplicates(
+ [...replies, ...fallback],
+ previousReplies
+ );
  replies = merged.slice(0, 5);
  }
 
