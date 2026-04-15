@@ -639,7 +639,7 @@ ${previousSection}
 
  const completion = await openai.chat.completions.create({
  model: MODEL,
- temperature: 0.95,
+ temperature: 0.55,
  messages: [
  { role: "system", content: systemPrompt },
  {
