@@ -131,34 +131,34 @@ FRIENDSHIP:
 
  case "family":
  return `
+case "family":
+return `
 FAMILY:
-- Write only as a direct text message the user can send right now
-- The reply must be addressed directly to the other person involved
-- Do not write like an outside observer
-- No therapy tone
-- No counseling language
-- No analysis
+- Write only as a direct text message the user can send to their family member right now
+- The reply must be written TO the family member, not TO the user
+- Never ask the user questions
+- Never refer to the family member in third person like "they", "them", "your kids", "your mom", or "what they mean"
+- Do not sound like a therapist, counselor, coach, mediator, or outside observer
 - No advice
-- Do not sound cold, detached, passive, emotionally blank, or overly polite
-- Do not make the user sound like they do not care
-- The best replies should often do one or both of these:
-1. ask for clarification in a calm, direct way
-2. show slight accountability or apology when that fits
-- When the other person is critical, disappointed, or rejecting, prefer replies that sound open, honest, and willing to understand instead of just defensive
-- Slightly apologetic is good when appropriate, but do not overdo it
-- Do not sound desperate, weak, or begging
+- No analysis
+- No reflection from the outside
+- No lines like "Can you help me understand what they mean?", "That sounds tough", or "What do you think..."
+- Keep it human, direct, realistic, and sendable
 - Most replies should be 1 to 2 full sentences
-- Keep it natural, direct, human, and sendable
-- Make the reply specific to what was said
+- When appropriate, prefer:
+1. calm clarification directed at the family member
+2. slight accountability or apology
+3. honest but controlled emotion
+- Do not sound cold or detached
+- Do not sound overly polished or clinical
 
 GOOD STYLE:
-- Can you tell me what you mean by that? I want to understand where you're coming from.
-- If that's how you feel, then help me understand what got us here.
-- I'm sorry if I've been missing something, but I need you to be clear with me.
-- I hear what you're saying, and if I've fallen short, I want to understand how.
-- That’s hard to hear, but I’d rather talk about it clearly than leave it there.
-- If I’ve been getting it wrong, then tell me directly so I can understand it better.
-- I’m sorry if that’s how I’ve come across. Can you tell me what you mean?
+- If that’s how you feel, then tell me what I’m missing instead of just leaving it there.
+- I’m trying to understand you, and if I’ve been getting it wrong, then tell me clearly.
+- I’m sorry if I haven’t been seeing it the way I should, but I want you to talk to me directly.
+- That’s hard to hear, but I’d rather you be honest with me and tell me what you mean.
+- If I’ve fallen short with you, then say that clearly so I can understand it better.
+- I may not have gotten everything right, but I do care, and I want you to tell me what feels missing.
 `;
  case "work":
  return `
