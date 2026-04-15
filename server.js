@@ -118,24 +118,32 @@ function removeNearDuplicates(replies, previousReplies = []) {
 function detectSubmode(category, message) {
  const lower = clean(message).toLowerCase();
 
- if (category === "dating") {
- const greetingMessages = [
+ const greetingPatterns = [
  "hey",
  "hi",
  "hello",
+ "morning",
  "good morning",
- "good night",
  "goodnight",
+ "good night",
  "happy monday",
+ "happy tuesday",
+ "happy wednesday",
+ "happy thursday",
  "happy friday",
+ "happy saturday",
+ "happy sunday",
  "how are you",
  "how’s your day",
  "hows your day",
  "what's up",
- "whats up"
+ "whats up",
+ "yo",
+ "gm"
  ];
 
- if (greetingMessages.some((p) => lower === p || lower.startsWith(p))) {
+ if (category === "dating") {
+ if (greetingPatterns.some((p) => lower === p || lower.startsWith(p))) {
  return "greeting";
  }
 
@@ -156,6 +164,10 @@ function detectSubmode(category, message) {
  }
 
  if (category === "family") {
+ if (greetingPatterns.some((p) => lower === p || lower.startsWith(p))) {
+ return "greeting";
+ }
+
  const highConflictTriggers = [
  "i don't want to come home anymore",
  "i dont want to come home anymore",
@@ -228,6 +240,25 @@ GLOBAL FORMAT RULES:
 
 function getCategoryRules(category, submode) {
  if (category === "family") {
+ if (submode === "greeting") {
+ return `
+FAMILY GREETING MODE:
+- Treat the message as a simple family greeting or casual check-in
+- Replies should be warm, natural, and easy to send
+- Do NOT sound suspicious, intense, conflicted, or overly emotional
+- Do NOT use conflict-resolution language
+- Do NOT ask "what do you mean"
+- Keep it light, normal, and human
+- Most replies should be 1 sentence, sometimes 2
+GOOD STYLE:
+- Good morning to you too.
+- Morning, hope your day’s off to a good start.
+- Good morning, hope today goes smoothly for you.
+- Morning, how’s your day looking so far?
+- Good morning — hope you slept well.
+`;
+ }
+
  if (submode === "high_conflict") {
  return `
 FAMILY HIGH CONFLICT MODE:
@@ -339,11 +370,11 @@ DATING GREETING MODE:
 - Good replies should feel like natural texting
 - Most replies should be 1 sentence, sometimes 2
 GOOD STYLE:
-- Happy Monday to you too.
-- Happy Monday — hope your day’s off to a good start.
-- Happy Monday how’s your day going?
-- Hope your Monday’s treating you alright so far.
-- Happy Monday, you too. Anything fun planned today?
+- Good morning to you too.
+- Good morning how’s your day going?
+- Morning, hope your day’s off to a good start.
+- Good morning, you too. Sleep okay?
+- Morning — hope today’s treating you kindly already.
 `;
  }
 
@@ -455,6 +486,17 @@ function getCategoryBannedPhrases(category, submode) {
  ];
 
  if (category === "family") {
+ if (submode === "greeting") {
+ return [
+ ...global,
+ "if that's how you feel",
+ "don't just leave it at that",
+ "tell me what you mean",
+ "i need you to be specific",
+ "if you're frustrated"
+ ];
+ }
+
  return [
  ...global,
  "i'm sorry to hear that",
@@ -492,7 +534,8 @@ function getCategoryBannedPhrases(category, submode) {
  "tell me more",
  "i’m not sure how to read that",
  "i'm not sure how to read that",
- "now you have my attention"
+ "now you have my attention",
+ "fair enough"
  ];
  }
 
@@ -514,13 +557,23 @@ function postProcessReplies(category, submode, replies, previousReplies = []) {
 }
 
 function getCategoryFallbackReplies(category, submode) {
+ if (category === "family" && submode === "greeting") {
+ return [
+ "Good morning to you too.",
+ "Morning, hope your day’s off to a good start.",
+ "Good morning, hope today goes smoothly for you.",
+ "Morning, how’s your day looking so far?",
+ "Good morning — hope you slept well."
+ ];
+ }
+
  if (category === "dating" && submode === "greeting") {
  return [
- "Happy Monday to you too.",
- "Happy Monday — hope your day’s off to a good start.",
- "Happy Monday how’s your day going?",
- "Hope your Monday’s treating you alright so far.",
- "Happy Monday, you too. Anything fun planned today?"
+ "Good morning to you too.",
+ "Good morning how’s your day going?",
+ "Morning, hope your day’s off to a good start.",
+ "Good morning, you too. Sleep okay?",
+ "Morning — hope today’s treating you kindly already."
  ];
  }
 
@@ -566,11 +619,11 @@ function getCategoryFallbackReplies(category, submode) {
 
  if (category === "dating") {
  return [
- "What did you mean by that?",
- "Okay, now you have my attention.",
- "Fair enough, tell me more.",
- "I'm not totally sure how to read that yet.",
- "Alright, I'm listening."
+ "Hey, good to hear from you.",
+ "Hi how’s your day going?",
+ "Hey, hope your day’s going well so far.",
+ "Nice to hear from you — what are you up to today?",
+ "Hey, how’s everything going on your end?"
  ];
  }
 
