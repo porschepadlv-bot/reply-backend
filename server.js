@@ -137,7 +137,11 @@ function enforceReplies(category, replies, previousReplies = []) {
  "that must feel",
  "you’re allowed to feel",
  "your feelings are valid",
- "i want to validate"
+ "i want to validate",
+ "i can understand you're feeling",
+ "i can understand you’re feeling",
+ "i understand you're feeling",
+ "i understand you’re feeling"
  ];
 
  cleaned = cleaned.filter((reply) => {
@@ -180,7 +184,15 @@ function enforceReplies(category, replies, previousReplies = []) {
  "what you need me to understand right now",
  "i can see how i may not have been",
  "let’s focus on what you need me to understand",
- "let's focus on what you need me to understand"
+ "let's focus on what you need me to understand",
+ "i can understand you're feeling",
+ "i can understand you’re feeling",
+ "i understand you're feeling",
+ "i understand you’re feeling",
+ "i know you're overwhelmed",
+ "i know you’re overwhelmed",
+ "you’re feeling overwhelmed",
+ "you're feeling overwhelmed"
  ];
 
  cleaned = cleaned.filter((reply) => {
@@ -214,6 +226,8 @@ FAMILY:
  "i can see how you may feel..."
  "let's focus on..."
  "help me understand your perspective"
+ "i can understand you're feeling..."
+ "i understand you're feeling..."
 - For parent-to-child situations, do NOT make the parent sound weak, submissive, overly apologetic, or unsure of their role
 - Slight accountability is okay when appropriate, but keep it restrained
 - Clarification is good, but it must sound direct and natural
@@ -364,7 +378,7 @@ function fallbackReplies(category) {
 }
 
 app.get("/", (_req, res) => {
- res.send("AI Reply Server Running V1006");
+ res.send("AI Reply Server Running V1007");
 });
 
 app.get("/health", (_req, res) => {
