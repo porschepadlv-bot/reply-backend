@@ -210,6 +210,58 @@ function detectSubmode(category, message) {
  return "standard";
  }
 
+ if (category === "work") {
+ const appearanceTriggers = [
+ "beautiful",
+ "pretty",
+ "attractive",
+ "gorgeous",
+ "hot",
+ "sexy",
+ "cute",
+ "good looking",
+ "handsome",
+ "you look amazing",
+ "you look great",
+ "your outfit",
+ "your body"
+ ];
+
+ if (appearanceTriggers.some((p) => lower.includes(p))) {
+ return "boundary_appearance";
+ }
+
+ const socialInviteTriggers = [
+ "grab a drink",
+ "drink later",
+ "drink after work",
+ "after work",
+ "go out sometime",
+ "hang out",
+ "dinner sometime",
+ "get dinner",
+ "grab dinner",
+ "coffee sometime",
+ "get coffee",
+ "want to get drinks",
+ "want to grab drinks",
+ "let's get drinks",
+ "lets get drinks",
+ "let's grab a drink",
+ "lets grab a drink",
+ "let's grab drinks",
+ "lets grab drinks",
+ "want to hang out",
+ "want to get dinner"
+ ];
+
+ if (socialInviteTriggers.some((p) => lower.includes(p))) {
+ return "boundary_invite";
+ }
+
+ return "standard";
+ }
+
  return "standard";
 }
 
@@ -438,6 +490,45 @@ FRIENDSHIP MODE:
  }
 
  if (category === "work") {
+ if (submode === "boundary_appearance") {
+ return `
+WORK BOUNDARY APPEARANCE MODE:
+- The message crosses a workplace boundary by commenting on appearance
+- Every reply must set a professional boundary
+- Do NOT accept, encourage, reschedule, or soften into social openness
+- Keep replies polite, clear, and work-focused
+- No flirting
+- No personal warmth that invites more
+- Most replies should be 1 sentence, sometimes 2
+GOOD STYLE:
+- I'd prefer to keep things professional.
+- Let's keep our communication work-focused.
+- I'm more comfortable keeping this work-related.
+- Let's keep this professional, please.
+- I'd rather keep things strictly work-related.
+`;
+ }
+
+ if (submode === "boundary_invite") {
+ return `
+WORK BOUNDARY INVITE MODE:
+- The message is a social or personal invitation in a work context
+- Every reply must set a professional boundary
+- Do NOT reschedule
+- Do NOT say "another time"
+- Do NOT say "I'd love to join"
+- Do NOT accept or leave the door open socially
+- Keep replies polite, clear, and professional
+- Most replies should be 1 sentence, sometimes 2
+GOOD STYLE:
+- I'd rather keep things professional.
+- I prefer to keep work and personal plans separate.
+- I'm more comfortable keeping this work-related.
+- I'd rather keep our relationship professional.
+- Thanks, but I prefer to keep this strictly professional.
+`;
+ }
+
  return `
 WORK MODE:
 - Write only as a direct message the user can send right now
@@ -539,6 +630,36 @@ function getCategoryBannedPhrases(category, submode) {
  ];
  }
 
+ if (category === "work" && submode === "boundary_invite") {
+ return [
+ ...global,
+ "another time",
+ "reschedule",
+ "i'd love to join",
+ "i would love to join",
+ "let's plan for another time",
+ "let's do it soon",
+ "that sounds great",
+ "i have plans but",
+ "i can't make it tonight but",
+ "let's grab a drink",
+ "grab a drink later"
+ ];
+ }
+
+ if (category === "work" && submode === "boundary_appearance") {
+ return [
+ ...global,
+ "thank you for the compliment",
+ "i appreciate your kind words",
+ "that's very nice of you to say",
+ "thanks, i appreciate it",
+ "your compliment means a lot",
+ "you too",
+ "that means a lot"
+ ];
+ }
+
  return global;
 }
 
@@ -584,6 +705,26 @@ function getCategoryFallbackReplies(category, submode) {
  "That’s fair, but tell me clearly what you expect from me.",
  "If I need to do more, then say exactly where.",
  "Okay, then tell me what you want me to take care of."
+ ];
+ }
+
+ if (category === "work" && submode === "boundary_appearance") {
+ return [
+ "I'd prefer to keep things professional.",
+ "Let's keep our communication work-focused.",
+ "I'm more comfortable keeping this work-related.",
+ "Let's keep this professional, please.",
+ "I'd rather keep things strictly work-related."
+ ];
+ }
+
+ if (category === "work" && submode === "boundary_invite") {
+ return [
+ "I'd rather keep things professional.",
+ "I prefer to keep work and personal plans separate.",
+ "I'm more comfortable keeping this work-related.",
+ "I'd rather keep our relationship professional.",
+ "Thanks, but I prefer to keep this strictly professional."
  ];
  }
 
