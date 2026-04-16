@@ -308,6 +308,19 @@ GOOD STYLE:
 - Good morning, hope today goes smoothly for you.
 - Morning, how’s your day looking so far?
 - Good morning — hope you slept well.
+- If the user describes the situation instead of pasting exact words, infer who the other person is and generate replies AS IF the user is texting that person directly right now.
+- Do NOT explain the situation back to the user.
+- Do NOT give advice to the user.
+- Do NOT comment on the user's feelings.
+- Do NOT narrate what the user should do.
+- Every reply must still read like a message the user can copy and send immediately.
+- If a reply could begin with:
+- "I get that..."
+- "It can be frustrating..."
+- "You should..."
+- "It sounds like..."
+- "You may want to..."
+then it is WRONG.
 `;
  }
 
