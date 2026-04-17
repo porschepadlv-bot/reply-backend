@@ -27,7 +27,7 @@ function stripCodeFences(text) {
 
 function normalizeReply(text) {
  return clean(text)
- .replace(/^["'`$begin:math:display$$end:math:display$,\s]+|["'`\[\],\s]+$/g, "")
+ .replace(/^["'`[\],\s]+|["'`[\],\s]+$/g, "")
  .replace(/\s+/g, " ")
  .trim();
 }
@@ -96,6 +96,7 @@ function removeNearDuplicates(replies, previousReplies = []) {
  const prior = new Set(
  previousReplies.map((x) => normalizeReply(x).toLowerCase())
  );
+
  const usedStarts = new Set();
  const finalReplies = [];
 
@@ -115,58 +116,81 @@ function removeNearDuplicates(replies, previousReplies = []) {
  return finalReplies;
 }
 
-function detectSubmode(category, message) {
- const lower = clean(message).toLowerCase();
+function isDescriptiveInput(message) {
+ const lower = message.toLowerCase();
 
- const greetingPatterns = [
- "hey",
- "hi",
- "hello",
- "morning",
- "good morning",
- "goodnight",
- "good night",
- "happy monday",
- "happy tuesday",
- "happy wednesday",
- "happy thursday",
- "happy friday",
- "happy saturday",
- "happy sunday",
- "how are you",
- "how’s your day",
- "hows your day",
- "what's up",
- "whats up",
- "yo",
- "gm"
+ const descriptiveMarkers = [
+ "my mom says",
+ "my dad says",
+ "my parents say",
+ "my boyfriend says",
+ "my girlfriend says",
+ "my wife says",
+ "my husband says",
+ "my partner says",
+ "my sister says",
+ "my brother says",
+ "my son says",
+ "my daughter says",
+ "my child says",
+ "my kid says",
+ "there's been",
+ "there has been",
+ "conversations often",
+ "you want to",
+ "without making things worse",
+ "after ",
+ "because ",
+ "when ",
+ "situation",
+ "argument",
+ "tension"
  ];
 
- if (category === "dating") {
- if (greetingPatterns.some((p) => lower === p || lower.startsWith(p))) {
- return "greeting";
+ return descriptiveMarkers.some((x) => lower.includes(x));
+}
+
+function detectFamilyRole(message) {
+ const lower = message.toLowerCase();
+
+ if (
+ lower.includes("my mom says") ||
+ lower.includes("my dad says") ||
+ lower.includes("my parents say") ||
+ lower.includes("my father says") ||
+ lower.includes("my mother says") ||
+ lower.includes("my stepdad says") ||
+ lower.includes("my stepmom says")
+ ) {
+ return "child_to_parent";
  }
 
- const ambiguousMessages = [
- "hard to read",
- "mixed signals",
- "not sure what you mean",
- "confused",
- "kinda hard to read",
- "idk"
- ];
-
- if (ambiguousMessages.some((p) => lower.includes(p))) {
- return "ambiguous";
+ if (
+ lower.includes("my son says") ||
+ lower.includes("my daughter says") ||
+ lower.includes("my kid says") ||
+ lower.includes("my child says") ||
+ lower.includes("my teen says")
+ ) {
+ return "parent_to_child";
  }
 
- return "standard";
+ if (
+ lower.includes("my sister says") ||
+ lower.includes("my brother says") ||
+ lower.includes("my sibling says") ||
+ lower.includes("my aunt says") ||
+ lower.includes("my uncle says") ||
+ lower.includes("my cousin says")
+ ) {
+ return "adult_family";
  }
 
- if (category === "family") {
- if (greetingPatterns.some((p) => lower === p || lower.startsWith(p))) {
- return "greeting";
- }
+ return "general_family";
+}
+
+function detectFamilySubmode(message) {
+ const lower = message.toLowerCase();
 
  const highConflictTriggers = [
  "i don't want to come home anymore",
@@ -183,390 +207,227 @@ function detectSubmode(category, message) {
  "you embarrassed me",
  "you never listen to me",
  "you don't respect me",
- "you dont respect me",
- "you always assume the worst about me"
+ "you dont respect me"
  ];
 
  if (highConflictTriggers.some((p) => lower.includes(p))) {
  return "high_conflict";
  }
 
- const directiveTriggers = [
- "you need to",
- "you should",
- "you have to",
- "start helping",
- "do your share",
- "help out with house chores",
- "you need to help out",
- "pitch in more",
- "do more around the house"
- ];
-
- if (directiveTriggers.some((p) => lower.includes(p))) {
- return "directive";
- }
-
- return "standard";
- }
-
- if (category === "work") {
- const appearanceTriggers = [
- "beautiful",
- "pretty",
- "attractive",
- "gorgeous",
- "hot",
- "sexy",
- "cute",
- "good looking",
- "handsome",
- "you look amazing",
- "you look great",
- "your outfit",
- "your body"
- ];
-
- if (appearanceTriggers.some((p) => lower.includes(p))) {
- return "boundary_appearance";
- }
-
- const socialInviteTriggers = [
- "grab a drink",
- "drink later",
- "drink after work",
- "after work",
- "go out sometime",
- "hang out",
- "dinner sometime",
- "get dinner",
- "grab dinner",
- "coffee sometime",
- "get coffee",
- "want to get drinks",
- "want to grab drinks",
- "let's get drinks",
- "lets get drinks",
- "let's grab a drink",
- "lets grab a drink",
- "let's grab drinks",
- "lets grab drinks",
- "want to hang out",
- "want to get dinner"
- ];
-
- if (socialInviteTriggers.some((p) => lower.includes(p))) {
- return "boundary_invite";
- }
-
- return "standard";
- }
-
  return "standard";
 }
 
-function getGlobalRules() {
- return `
-Return ONLY a plain JSON array of EXACTLY 5 strings.
+function familyRoleGuidance(message) {
+ const role = detectFamilyRole(message);
+ const descriptive = isDescriptiveInput(message);
 
-GLOBAL FORMAT RULES:
-- Output must be a JSON array only
-- No markdown
-- No explanation
-- No labels
-- No bullet points
-- No numbering
-- Do not return an object
-- Each reply must be something the user can send immediately
-- Each reply must be distinct
-- Keep replies natural, direct, and sendable
-- Avoid generic filler
-- Do not use quotation marks around replies unless naturally required
-- The input message is ALWAYS what the other person said to the user
-- The replies MUST always be from the user's perspective responding back
-- NEVER repeat the same tone or direction as the input
-- NEVER sound like you are giving instructions to the user
-- If the input is a command, complaint, criticism, or greeting, the reply must respond to it and not restate it
-`.trim();
-}
-
-function getCategoryRules(category, submode) {
- if (category === "family") {
- if (submode === "greeting") {
+ if (role === "child_to_parent") {
  return `
-FAMILY GREETING MODE:
-- Treat the message as a simple family greeting or casual check-in
-- Replies should be warm, natural, and easy to send
-- Do NOT sound suspicious, intense, conflicted, or overly emotional
-- Do NOT use conflict-resolution language
-- Do NOT ask "what do you mean"
-- Keep it light, normal, and human
-- Most replies should be 1 sentence, sometimes 2
-GOOD STYLE:
-- Good morning to you too.
-- Morning, hope your day’s off to a good start.
-- Good morning, hope today goes smoothly for you.
-- Morning, how’s your day looking so far?
-- Good morning — hope you slept well.
-- If the user describes the situation instead of pasting exact words, infer who the other person is and generate replies AS IF the user is texting that person directly right now.
-- Do NOT explain the situation back to the user.
-- Do NOT give advice to the user.
-- Do NOT comment on the user's feelings.
-- Do NOT narrate what the user should do.
-- Every reply must still read like a message the user can copy and send immediately.
-- If a reply could begin with:
-- "I get that..."
-- "It can be frustrating..."
-- "You should..."
-- "It sounds like..."
-- "You may want to..."
-then it is WRONG.
+FAMILY ROLE: CHILD RESPONDING TO PARENT
+- The user is likely responding to a parent or guardian
+- Keep replies respectful, grounded, natural, and age-neutral
+- Do NOT sound sarcastic, snarky, or rebellious
+- Do NOT sound overly submissive either
+- Slight self-advocacy is okay
+- Good tone = "I hear you / I understand / I'm working on it / I'm trying"
+- If the input is descriptive, convert it into a direct reply the child could actually send
+- Avoid therapy language
+- Avoid fake polished corporate phrases like "I appreciate the feedback" unless it sounds truly natural
 `;
  }
 
- if (submode === "high_conflict") {
+ if (role === "parent_to_child") {
  return `
-FAMILY HIGH CONFLICT MODE:
-- Write only as a direct text message the user can send right now
-- The reply MUST be written directly to the other person as if texting them
-- ALWAYS speak directly using "you"
-- NEVER refer to them as "she", "he", "they", "her", "him", or by role like "my sister", "my mom", or "my dad"
-- Do NOT ask the user questions
-- Do NOT sound like a therapist, coach, counselor, mediator, or outside observer
-- No advice
-- No analysis
-- No emotional commentary from the outside
-- Do NOT use reflective therapy phrasing
-- Do NOT make the user sound weak, needy, overly apologetic, or passive
-- Replies should de-escalate, but be firmer and less soft
-- Clarification should sound direct
-- Emotional honesty should be brief and grounded
-- Repair-oriented replies should keep dignity and calm authority
-- Most replies should be 1 to 2 full sentences
-- The 5 replies should feel intentionally different:
- 1. clarification
- 2. emotional honesty
- 3. light accountability
- 4. calm firmness
- 5. repair-oriented directness
-GOOD STYLE:
-- If that's how you feel, then tell me what you mean.
-- Don't just say that and leave it there. Tell me what you're talking about.
-- If you think I'm missing something, then say it clearly.
-- I hear what you're saying, but I need you to be specific.
-- If you're frustrated with me, then say it plainly.
+FAMILY ROLE: PARENT RESPONDING TO CHILD
+- The user is likely responding to a child or teen
+- Keep calm parental authority
+- Do NOT make the parent sound weak, unsure, overly apologetic, or therapist-like
+- Do NOT sound harsh or controlling
+- Good tone = calm, clear, steady, direct
+- If the input is descriptive, convert it into a direct reply the parent could actually send
 `;
  }
 
- if (submode === "directive") {
+ if (role === "adult_family") {
  return `
-FAMILY DIRECTIVE MODE:
-- The other person is giving instructions, criticism, or commands
-- Reply from the user's perspective
-- Do NOT mirror the same authority tone back
-- Respond to the complaint instead of restating it
-- ALWAYS speak directly using "you"
-- NEVER refer to them as "she", "he", "they", "her", "him", or by role
+FAMILY ROLE: ADULT FAMILY MEMBER TO ADULT FAMILY MEMBER
+- Keep replies direct, calm, human, and realistic
 - No therapy tone
-- No coaching
-- No advice
-- No analysis
-- Keep the tone calm, grounded, and realistic
-- Slight accountability is okay when appropriate
-- Most replies should be 1 to 2 sentences
-- The 5 replies should feel intentionally different:
- 1. clarification
- 2. emotional honesty
- 3. light accountability
- 4. calm firmness
- 5. repair-oriented directness
-GOOD STYLE:
-- Alright, then tell me exactly what you want me to handle.
-- If you want more from me, then be specific about what needs to get done.
-- That’s fair, but tell me clearly what you expect from me.
-- If I need to do more, then say exactly where.
-- Okay, then tell me what you want me to take care of.
+- No coaching tone
+- If the input is descriptive, convert it into a direct reply the user could send
+`;
+ }
+
+ if (descriptive) {
+ return `
+FAMILY ROLE: GENERAL FAMILY DESCRIPTION INPUT
+- The input sounds like a situation description, not exact quoted words
+- Convert the situation into a direct reply the user can actually send
+- Do NOT answer the description itself
+- Do NOT give advice about the situation
+- Return only sendable replies
 `;
  }
 
  return `
-FAMILY STANDARD MODE:
-- Write only as a direct text message the user can send right now
-- The reply MUST be written directly to the other person as if texting them
-- ALWAYS speak directly using "you"
-- NEVER refer to them as "she", "he", "they", "her", "him", or by role like "my sister", "my mom", or "my dad"
-- Do NOT ask the user questions
-- Do NOT sound like a therapist, coach, counselor, mediator, or outside observer
+FAMILY ROLE: GENERAL FAMILY
+- Keep replies calm, grounded, natural, and sendable
+`;
+}
+
+function categoryRules(category, message, context) {
+ const familySubmode = detectFamilySubmode(message);
+ const familyGuidance = familyRoleGuidance(message);
+ const descriptive = isDescriptiveInput(message);
+
+ switch (category) {
+ case "family":
+ return `
+FAMILY MODE:
+- Write only direct text messages the user can send right now
 - No advice
 - No analysis
+- No therapist tone
+- No coaching
 - No emotional commentary from the outside
-- Slight accountability is okay when appropriate, but keep it restrained
-- Clarification is good, but it must sound direct and natural
-- Keep replies calm, grounded, human, and sendable
-- Do NOT make every reply soft
-- Do NOT make every reply apologetic
-- Most replies should be 1 to 2 full sentences
-- The 5 replies should feel intentionally different:
- 1. clarification
- 2. emotional honesty
- 3. light accountability
- 4. calm firmness
- 5. repair-oriented directness
-GOOD STYLE:
-- If that's how you feel, then tell me what you mean.
-- Don't just say that and leave it there. Tell me what you're talking about.
-- If you think I'm missing something, then say it clearly.
-- I hear what you're saying, but I need you to be specific.
-- If you're frustrated with me, then say it plainly.
-`;
- }
-
- if (category === "dating") {
- if (submode === "greeting") {
- return `
-DATING GREETING MODE:
-- Treat the message as a casual opener, greeting, or light check-in
-- Replies should be light, warm, easy, and natural
-- Do NOT sound suspicious, confused, or intense
-- Do NOT ask "what do you mean"
-- Do NOT act like the message is vague drama
-- Do NOT be overly flirty
-- Keep it smooth, socially normal, and low-pressure
-- Good replies should feel like natural texting
-- Most replies should be 1 sentence, sometimes 2
-GOOD STYLE:
-- Good morning to you too.
-- Good morning how’s your day going?
-- Morning, hope your day’s off to a good start.
-- Good morning, you too. Sleep okay?
-- Morning — hope today’s treating you kindly already.
-`;
- }
-
- if (submode === "ambiguous") {
- return `
-DATING AMBIGUOUS MODE:
-- The message is unclear or mixed
-- Replies can gently clarify
-- Stay natural and attractive
-- Do not sound needy or overly serious
-- No therapist tone
-- No coaching
-- No advice
-- Keep it casual and textable
-`;
- }
-
- return `
-DATING STANDARD MODE:
-- Write only as a direct text message the user can send right now
-- Keep it natural, attractive, casual, socially aware, and easy to reply to
-- No therapist tone
-- No coaching
-- No advice
-- No analysis
-- Do not sound cheesy, thirsty, robotic, or performative
-- Keep it realistic and textable
+- No generic validation language
+- Replies must sound like a real person texting a family member
 - Most replies should be 1 to 2 sentences
-- Each set of 5 should feel meaningfully different
+- Each set of 5 should feel varied but stay inside the same family tone
+- Keep the tone category-driven, not random
+- Avoid sudden tone swings between soft therapy and sharp confrontation
+- Do NOT use phrases like:
+ "it sounds like you're feeling"
+ "you must be feeling"
+ "help me understand your perspective"
+ "your feelings are valid"
+ "safe space"
+ "let's process this"
+ "let's unpack that"
+- Do NOT return fake-polished phrases that sound HR-like or robotic
+${familyGuidance}
+${
+ familySubmode === "high_conflict"
+ ? `
+HIGH CONFLICT FAMILY SUBMODE:
+- Stay firm, calm, and direct
+- Do not sound passive
+- Do not sound needy
+- Keep dignity and control
+`
+ : `
+STANDARD FAMILY SUBMODE:
+- Slight warmth is okay
+- Calmness matters more than softness
+`
+}
+${
+ descriptive
+ ? `
+DESCRIPTION INPUT RULE:
+- The input may describe the situation instead of quoting exact words
+- Convert it into direct replies the user could actually send
+- Never reply as if you are speaking about "the user"
+`
+ : ""
+}
+GOOD FAMILY TONE EXAMPLES:
+- I hear you. I'm taking it seriously.
+- I understand why you're saying that, and I'm working on it.
+- I know this matters, and I want to do better here.
+- I get what you're saying. Tell me clearly what needs to change.
 `;
- }
-
- if (category === "relationship") {
+ case "relationship":
  return `
 RELATIONSHIP MODE:
-- Write only as a direct text message the user can send right now
-- Keep it natural, direct, emotionally real, and sendable
+- Write only direct text messages the user can send right now
+- Keep it emotionally real, natural, and sendable
 - No therapy tone
 - No coaching
 - No advice
 - No analysis
 - Accountability is good when it fits
-- Avoid generic filler
+- Do not swing between overly apologetic and cold
 - Most replies should be 1 to 2 sentences
-- Each set of 5 should feel meaningfully different
+- Each set of 5 should be varied but still feel like the same category
+- Avoid robotic lines like "I appreciate you bringing this up" unless it feels truly natural
+- Avoid over-therapeutic phrasing like "I want to understand your perspective better" unless the input truly calls for it
+- Prefer grounded relationship language
+GOOD STYLE:
+- I hear what you're saying, and I want to fix this.
+- I get why you're upset, and I need to take that seriously.
+- I don't want this to keep going in the wrong direction.
+- Tell me what feels missing so I can show up better.
 `;
- }
-
- if (category === "friendship") {
+ case "friendship":
  return `
 FRIENDSHIP MODE:
-- Write only as a direct text message the user can send right now
-- Keep it natural, direct, realistic, and socially normal
+- Write only direct text messages the user can send right now
+- Keep replies realistic, socially normal, and natural
 - No therapy tone
 - No coaching
 - No advice
 - No analysis
+- Keep the tone mature and clear
 - Most replies should be 1 to 2 sentences
-- Each set of 5 should feel meaningfully different
+- Each set of 5 should feel meaningfully different but still coherent
 `;
- }
-
- if (category === "work") {
- if (submode === "boundary_appearance") {
+ case "dating":
  return `
-WORK BOUNDARY APPEARANCE MODE:
-- The message crosses a workplace boundary by commenting on appearance
-- Every reply must set a professional boundary
-- Do NOT accept, encourage, reschedule, or soften into social openness
-- Keep replies polite, clear, and work-focused
-- No flirting
-- No personal warmth that invites more
-- Most replies should be 1 sentence, sometimes 2
+DATING MODE:
+- Write only direct text messages the user can send right now
+- Keep replies natural, casual, attractive, and easy to reply to
+- No therapy tone
+- No coaching
+- No advice
+- No analysis
+- Do NOT sound cheesy, thirsty, robotic, corny, or performative
+- Do NOT jump too far ahead emotionally
+- Do NOT force "meet up" language unless the input clearly supports moving toward a date
+- Keep it confident but relaxed
+- Most replies should be 1 to 2 sentences
+- Each set of 5 should be varied but clearly still dating replies
 GOOD STYLE:
-- I'd prefer to keep things professional.
-- Let's keep our communication work-focused.
-- I'm more comfortable keeping this work-related.
-- Let's keep this professional, please.
-- I'd rather keep things strictly work-related.
+- I'd be down to plan something soon if you are.
+- I've been meaning to see you again.
+- We should do something casual this week.
+- I'd like to keep this moving and see where it goes.
 `;
- }
-
- if (submode === "boundary_invite") {
- return `
-WORK BOUNDARY INVITE MODE:
-- The message is a social or personal invitation in a work context
-- Every reply must set a professional boundary
-- Do NOT reschedule
-- Do NOT say "another time"
-- Do NOT say "I'd love to join"
-- Do NOT accept or leave the door open socially
-- Keep replies polite, clear, and professional
-- Most replies should be 1 sentence, sometimes 2
-GOOD STYLE:
-- I'd rather keep things professional.
-- I prefer to keep work and personal plans separate.
-- I'm more comfortable keeping this work-related.
-- I'd rather keep our relationship professional.
-- Thanks, but I prefer to keep this strictly professional.
-`;
- }
-
+ case "work":
  return `
 WORK MODE:
-- Write only as a direct message the user can send right now
+- Write only direct messages the user can send right now
 - Keep it professional, respectful, neutral, and work-focused
-- No therapist tone
+- No therapy tone
 - No coaching
 - No advice
 - No analysis
-- Never encourage romantic or personal escalation
+- If the input is personal, flirtatious, or suggests social/romantic contact outside work, every reply must keep a professional boundary
+- Never suggest another time for drinks, hanging out, dinner, or personal contact
+- Never reciprocate compliments about appearance or attraction
+- Keep replies brief and clear
 - Most replies should be 1 to 2 sentences
-- Each set of 5 should feel meaningfully different
+GOOD STYLE:
+- I'd prefer to keep this professional.
+- Thanks, but I'd rather keep our relationship work-focused.
+- I appreciate it, but I want to keep things professional.
 `;
- }
-
+ default:
  return `
 GENERAL MODE:
-- Write direct, natural, sendable replies
-- No therapy tone
+- Write only direct text messages the user can send right now
 - No advice
 - No analysis
+- No therapy tone
+- Keep replies natural and sendable
 `;
+ }
 }
 
-function getCategoryBannedPhrases(category, submode) {
- const global = [
+function enforceReplies(category, replies, previousReplies = [], message = "") {
+ let cleaned = dedupeReplies(replies);
+
+ const bannedGlobalPhrases = [
  "it sounds like",
  "you’re feeling",
  "you're feeling",
@@ -580,228 +441,184 @@ function getCategoryBannedPhrases(category, submode) {
  "communication can be tricky",
  "i totally understand",
  "i know how that feels",
- "i can understand you're feeling",
- "i can understand you’re feeling",
- "i understand you're feeling",
- "i understand you’re feeling",
- "help me understand their perspective",
- "their perspective",
- "see their perspective"
+ "safe space",
+ "let's unpack",
+ "let’s unpack",
+ "let's process",
+ "let’s process",
+ "help me understand your perspective",
+ "understand your perspective better",
+ "see your perspective",
+ "their perspective"
  ];
-
- if (category === "family") {
- if (submode === "greeting") {
- return [
- ...global,
- "if that's how you feel",
- "don't just leave it at that",
- "tell me what you mean",
- "i need you to be specific",
- "if you're frustrated"
- ];
- }
-
- return [
- ...global,
- "i'm sorry to hear that",
- "i’m sorry to hear that",
- "help me see",
- "connect better",
- "let's focus on",
- "let’s focus on",
- "what you need me to understand right now",
- "i can see how i may not have been",
- "fully aware",
- "really alone in this",
- "how you’re feeling",
- "how you're feeling",
- "how they feel",
- "i care about how you feel",
- "i care about how they feel",
- "you need a safe space",
- "open conversation could help",
- "my sister",
- "my mom",
- "my dad",
- "she ",
- "he ",
- "they ",
- " her ",
- " him "
- ];
- }
-
- if (category === "dating" && submode === "greeting") {
- return [
- ...global,
- "what did you mean by that",
- "tell me more",
- "i’m not sure how to read that",
- "i'm not sure how to read that",
- "now you have my attention",
- "fair enough"
- ];
- }
-
- if (category === "work" && submode === "boundary_invite") {
- return [
- ...global,
- "another time",
- "reschedule",
- "i'd love to join",
- "i would love to join",
- "let's plan for another time",
- "let's do it soon",
- "that sounds great",
- "i have plans but",
- "i can't make it tonight but",
- "let's grab a drink",
- "grab a drink later"
- ];
- }
-
- if (category === "work" && submode === "boundary_appearance") {
- return [
- ...global,
- "thank you for the compliment",
- "i appreciate your kind words",
- "that's very nice of you to say",
- "thanks, i appreciate it",
- "your compliment means a lot",
- "you too",
- "that means a lot"
- ];
- }
-
- return global;
-}
-
-function postProcessReplies(category, submode, replies, previousReplies = []) {
- const banned = getCategoryBannedPhrases(category, submode);
- let cleaned = dedupeReplies(replies);
 
  cleaned = cleaned.filter((reply) => {
  const lower = reply.toLowerCase();
- return !banned.some((phrase) => lower.includes(phrase));
+ return !bannedGlobalPhrases.some((phrase) => lower.includes(phrase));
  });
+
+ if (category === "family") {
+ const role = detectFamilyRole(message);
+
+ const bannedFamilyPhrases = [
+ "i appreciate the feedback",
+ "thanks for the heads up",
+ "i'll definitely take that into consideration",
+ "i’ll definitely take that into consideration",
+ "what you need me to understand right now",
+ "i can see how i may not have been",
+ "fully aware",
+ "you need a safe space",
+ "open conversation could help"
+ ];
+
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !bannedFamilyPhrases.some((phrase) => lower.includes(phrase));
+ });
+
+ if (role === "child_to_parent") {
+ const bannedChildToParent = [
+ "i appreciate the feedback",
+ "thanks for the heads up",
+ "i’ll put in more effort",
+ "i'll put in more effort"
+ ];
+
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !bannedChildToParent.some((phrase) => lower.includes(phrase));
+ });
+ }
+
+ if (role === "parent_to_child") {
+ const bannedParentToChild = [
+ "i'm trying my best",
+ "i’m trying my best",
+ "it's frustrating to hear that",
+ "it’s frustrating to hear that"
+ ];
+
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !bannedParentToChild.some((phrase) => lower.includes(phrase));
+ });
+ }
+ }
+
+ if (category === "dating") {
+ const bannedDatingPhrases = [
+ "take it to the next level",
+ "i'm not sure how to read that yet",
+ "i’m not sure how to read that yet",
+ "okay, now you have my attention"
+ ];
+
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !bannedDatingPhrases.some((phrase) => lower.includes(phrase));
+ });
+ }
+
+ if (category === "work") {
+ const bannedWorkPhrases = [
+ "another time",
+ "reschedule",
+ "let's do it soon",
+ "let’s do it soon",
+ "i'd love to join",
+ "i’d love to join",
+ "that sounds great"
+ ];
+
+ cleaned = cleaned.filter((reply) => {
+ const lower = reply.toLowerCase();
+ return !bannedWorkPhrases.some((phrase) => lower.includes(phrase));
+ });
+ }
 
  cleaned = removeNearDuplicates(cleaned, previousReplies);
 
  return cleaned.slice(0, 5);
 }
 
-function getCategoryFallbackReplies(category, submode) {
- if (category === "family" && submode === "greeting") {
+function fallbackReplies(category, message = "") {
+ const familyRole = detectFamilyRole(message);
+
+ switch (category) {
+ case "family":
+ if (familyRole === "child_to_parent") {
  return [
- "Good morning to you too.",
- "Morning, hope your day’s off to a good start.",
- "Good morning, hope today goes smoothly for you.",
- "Morning, how’s your day looking so far?",
- "Good morning — hope you slept well."
+ "I hear you. I'm working on it and taking it seriously.",
+ "I understand why you're saying that, and I'm trying to do better.",
+ "I know this matters, and I'm putting more focus on it.",
+ "I get what you're saying. I'm not ignoring it.",
+ "I'm taking it seriously and working on improving."
  ];
  }
 
- if (category === "dating" && submode === "greeting") {
+ if (familyRole === "parent_to_child") {
  return [
- "Good morning to you too.",
- "Good morning how’s your day going?",
- "Morning, hope your day’s off to a good start.",
- "Good morning, you too. Sleep okay?",
- "Morning — hope today’s treating you kindly already."
- ];
- }
-
- if (category === "family" && submode === "directive") {
- return [
- "Alright, then tell me exactly what you want me to handle.",
- "If you want more from me, then be specific about what needs to get done.",
- "That’s fair, but tell me clearly what you expect from me.",
- "If I need to do more, then say exactly where.",
- "Okay, then tell me what you want me to take care of."
- ];
- }
-
- if (category === "work" && submode === "boundary_appearance") {
- return [
- "I'd prefer to keep things professional.",
- "Let's keep our communication work-focused.",
- "I'm more comfortable keeping this work-related.",
- "Let's keep this professional, please.",
- "I'd rather keep things strictly work-related."
- ];
- }
-
- if (category === "work" && submode === "boundary_invite") {
- return [
- "I'd rather keep things professional.",
- "I prefer to keep work and personal plans separate.",
- "I'm more comfortable keeping this work-related.",
- "I'd rather keep our relationship professional.",
- "Thanks, but I prefer to keep this strictly professional."
- ];
- }
-
- if (category === "family") {
- return [
- "If that's how you feel, then tell me what you mean.",
- "Don't just leave it at that. Tell me clearly what you're talking about.",
- "If you think I'm missing something, then say it plainly.",
- "I hear what you're saying, but I need you to be specific.",
- "If you're frustrated with me, then be direct about it."
- ];
- }
-
- if (category === "relationship") {
- return [
- "I hear what you're saying, and I need to take that seriously.",
- "You're right to bring it up, and I know I need to do better here.",
- "I'm not trying to dodge it. I know this matters.",
- "I understand why you're upset, and I need to own my part in it.",
- "I hear you, and I know I need to show up better."
- ];
- }
-
- if (category === "friendship") {
- return [
- "If something's off, just say it directly.",
- "I get that you're upset, but I'd rather talk about it clearly.",
- "That didn't sit right with me, and I think we should be honest about it.",
- "If we're going to fix it, then let's actually talk about it.",
- "Say what you mean directly so we can deal with it."
- ];
- }
-
- if (category === "dating") {
- return [
- "Hey, good to hear from you.",
- "Hi how’s your day going?",
- "Hey, hope your day’s going well so far.",
- "Nice to hear from you — what are you up to today?",
- "Hey, how’s everything going on your end?"
- ];
- }
-
- if (category === "work") {
- return [
- "Thanks for reaching out. I'd prefer to keep this work-focused.",
- "I appreciate it, but I'd rather keep this professional.",
- "Thank you, but I'm more comfortable keeping this work-related.",
- "I'd prefer to keep our communication professional.",
- "Thanks, but I'd rather keep this focused on work."
+ "I'm saying this because it matters, not to put you down.",
+ "I want us to deal with this calmly and clearly.",
+ "I'm not trying to attack you. I want us to fix it.",
+ "Let's talk about what's actually going wrong here.",
+ "I need us to handle this directly without making it worse."
  ];
  }
 
  return [
- "What do you mean by that?",
+ "I hear what you're saying, and I want to deal with it clearly.",
+ "I get that this matters, and I don't want to make it worse.",
+ "Let's talk about what actually needs to change here.",
+ "I understand why you're bringing it up, and I want to handle it better.",
+ "Tell me clearly what the issue is so we can deal with it."
+ ];
+ case "relationship":
+ return [
+ "I hear what you're saying, and I want to fix this.",
+ "I get why this matters, and I need to take it seriously.",
+ "Tell me what feels missing so I can show up better.",
+ "I don't want this to keep going in the wrong direction.",
+ "I hear you, and I want us to work through it."
+ ];
+ case "friendship":
+ return [
+ "If something's off, say it directly so we can deal with it.",
+ "I hear you, and I'd rather talk about it clearly.",
+ "Let's be honest about what's actually bothering you.",
+ "If we're going to fix it, we should say it plainly.",
+ "Tell me directly what you mean so we can sort it out."
+ ];
+ case "dating":
+ return [
+ "I'd be down to plan something soon if you are.",
+ "I've been meaning to see you again.",
+ "We should do something casual this week.",
+ "I'd like to see where this goes in person.",
+ "I'm into the idea of making plans."
+ ];
+ case "work":
+ return [
+ "I'd prefer to keep this professional.",
+ "Thanks, but I'd rather keep our relationship work-focused.",
+ "I appreciate it, but I want to keep things professional.",
+ "Let's keep this centered on work.",
+ "I'd rather keep our communication professional."
+ ];
+ default:
+ return [
+ "Tell me clearly what you mean.",
  "Can you be more specific?",
  "Say that a little more clearly.",
- "Tell me what you mean directly.",
- "I'm listening, so be clear with me."
+ "Tell me what you're actually getting at.",
+ "I hear you. Be direct with me."
  ];
+ }
 }
 
 app.get("/", (_req, res) => {
- res.send("AI Reply Server FINAL");
+ res.send("AI Reply Server V1012");
 });
 
 app.get("/health", (_req, res) => {
@@ -812,43 +629,74 @@ app.post("/reply", async (req, res) => {
  try {
  const category = clean(req.body?.category).toLowerCase();
  const message = clean(req.body?.message);
+ const context = clean(req.body?.context);
  const previousReplies = Array.isArray(req.body?.previousReplies)
- ? req.body.previousReplies.map(clean).filter(Boolean)
+ ? req.body.previousReplies.map((x) => clean(x)).filter(Boolean)
  : [];
 
  if (!message) {
- const submode = detectSubmode(category, "");
- return res.json({
- replies: getCategoryFallbackReplies(category, submode)
- });
+ return res.json({ replies: fallbackReplies(category, message) });
  }
-
- const submode = detectSubmode(category, message);
 
  const previousSection =
  previousReplies.length > 0
  ? `
-PREVIOUS REPLIES TO AVOID:
+AVOID THESE PREVIOUS REPLIES:
 ${previousReplies.map((r) => `- ${r}`).join("\n")}
 - Do not repeat them
 - Do not make minor rewrites of them
 - Generate clearly different options
 `.trim()
- : "PREVIOUS REPLIES TO AVOID:\nNone";
+ : "";
 
- const systemPrompt = `
-${getGlobalRules()}
-
-${getCategoryRules(category, submode)}
-
-${previousSection}
-`.trim();
+ const contextSection = context
+ ? `
+APP CONTEXT FROM CLIENT:
+${context}
+`.trim()
+ : "";
 
  const completion = await openai.chat.completions.create({
  model: MODEL,
- temperature: 0.55,
+ temperature: 0.85,
  messages: [
- { role: "system", content: systemPrompt },
+ {
+ role: "system",
+ content: `
+Return ONLY a plain JSON array of EXACTLY 5 distinct replies.
+
+GLOBAL RULES:
+- Output must be a JSON array only
+- No markdown
+- No explanation
+- No labels
+- No bullet points
+- No numbering
+- Do not return an object
+- Must contain EXACTLY 5 strings
+- Every reply must be something the user can send immediately
+- No advice
+- No analysis
+- No narration
+- No therapist tone
+- No coaching tone
+- No generic filler
+- Keep replies natural, direct, realistic, and sendable
+- The input is either:
+ 1. exact words said to the user, OR
+ 2. a short description of the situation
+- If the input is a description, convert it into direct reply options the user could actually send
+- Do not answer the situation as an outside observer
+- Stay consistent with the category tone
+- Do not let small wording changes create a totally different tone for the same category situation
+
+${categoryRules(category, message, context)}
+
+${contextSection}
+
+${previousSection}
+`.trim()
+ },
  {
  role: "user",
  content: `
@@ -863,38 +711,27 @@ Generate 5 different reply options now.
 
  const text = completion.choices?.[0]?.message?.content || "";
  const parsed = parseReplies(text);
+ let replies = enforceReplies(category, parsed, previousReplies, message);
 
- let replies = postProcessReplies(
- category,
- submode,
- parsed,
+ if (!replies || replies.length < 5) {
+ const fallback = fallbackReplies(category, message);
+ const merged = removeNearDuplicates(
+ [...(replies || []), ...fallback],
  previousReplies
  );
-
- if (replies.length < 5) {
- const fallback = getCategoryFallbackReplies(category, submode);
- const extra = postProcessReplies(
- category,
- submode,
- fallback,
- [...previousReplies, ...replies]
- );
-
- replies = [...replies, ...extra].slice(0, 5);
+ replies = merged.slice(0, 5);
  }
 
- if (replies.length === 0) {
- replies = getCategoryFallbackReplies(category, submode);
+ if (!replies || replies.length < 5) {
+ replies = fallbackReplies(category, message).slice(0, 5);
  }
 
  return res.json({ replies });
  } catch (error) {
  console.error("ERROR:", error);
  const category = clean(req.body?.category).toLowerCase();
- const submode = detectSubmode(category, "");
- return res.json({
- replies: getCategoryFallbackReplies(category, submode)
- });
+ const message = clean(req.body?.message);
+ return res.json({ replies: fallbackReplies(category, message) });
  }
 });
 
